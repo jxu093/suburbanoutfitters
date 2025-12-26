@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { Platform, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
+import { HelloWave } from '../components/hello-wave';
+import ParallaxScrollView from '../components/parallax-scroll-view';
+import { ThemedText } from '../components/themed-text';
+import { ThemedView } from '../components/themed-view';
 
 export default function HomeScreen() {
   return (
@@ -37,7 +37,7 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
+        <Link href="/dev/permissions-test">
           <Link.Trigger>
             <ThemedText type="subtitle">Step 2: Explore</ThemedText>
           </Link.Trigger>
@@ -72,6 +72,28 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
           <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
+        </ThemedText>
+      </ThemedView>
+
+      <ThemedView style={styles.stepContainer}>
+        <Link href="/dev/permissions-test">
+          <Link.Trigger>
+            <ThemedText type="subtitle">Developer: Permissions Test</ThemedText>
+          </Link.Trigger>
+        </Link>
+        <ThemedText>
+          Use this dev route to test camera and media permissions and verify env keys.
+        </ThemedText>
+      </ThemedView>
+
+      <ThemedView style={styles.stepContainer}>
+        <Link href="/add">
+          <Link.Trigger>
+            <ThemedText type="subtitle">Dev: Add Item (test)</ThemedText>
+          </Link.Trigger>
+        </Link>
+        <ThemedText>
+          Quick test to open the Add Item flow which uses the ImagePicker and local storage.
         </ThemedText>
       </ThemedView>
     </ParallaxScrollView>

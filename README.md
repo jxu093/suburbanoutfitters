@@ -48,3 +48,26 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+---
+
+## Environment variables (local)
+
+This project reads configuration from environment variables so you can keep API keys out of source control.
+
+- Copy `.env.example` to `.env.local` and add your real API keys (the `.env.local` file is already ignored):
+
+```text
+# .env.local
+WEATHER_API_KEY=your_openweathermap_api_key_here
+```
+
+- `app.config.js` loads `.env.local` and injects `WEATHER_API_KEY` into `expo` config `extra` so it is available at runtime via:
+
+```ts
+import Constants from 'expo-constants';
+const key = Constants.expoConfig?.extra?.WEATHER_API_KEY;
+```
+
+- Do NOT commit `.env.local`. Use `.env.example` for sharing env variable names in the repo.
+
