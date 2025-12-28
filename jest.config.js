@@ -5,6 +5,7 @@ module.exports = {
     '/node_modules/',
     '/android/',
     '/ios/',
+    // UI tests require additional mocking work for @testing-library/react-native
     '<rootDir>/__tests__/closet.ui.test.tsx',
     '<rootDir>/__tests__/outfits.ui.test.tsx',
   ],
@@ -23,7 +24,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@testing-library|@react-navigation|expo|@expo)/)'
   ],
-  // Remove testMatch override to allow Jest to discover tests naturally while ignoring specified paths.
-  // testMatch: ['<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}'],
+  // Only match files with .test.ts or .test.tsx extension
+  testMatch: ['<rootDir>/__tests__/**/*.test.{ts,tsx}'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };

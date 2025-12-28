@@ -1,6 +1,8 @@
 import type { Item } from '../types';
+import { isItemHidden } from '../utils/item-helpers';
+import { type WeatherCondition } from '../constants';
 
-export type WeatherCondition = 'hot' | 'warm' | 'mild' | 'cool' | 'cold' | 'freezing';
+export type { WeatherCondition };
 
 export type RandomizeOptions = {
   minItems?: number;
@@ -79,7 +81,7 @@ export function pickRandomOutfit(items: Item[], opts: RandomizeOptions = {}): It
 
   let filterableItems = items.filter((item) => {
     // Exclude hidden items
-    if (item.hidden) return false;
+    if (isItemHidden(item)) return false;
 
     // Filter by required categories
     if (requiredCategories && requiredCategories.length > 0 && item.category) {

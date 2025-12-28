@@ -1,34 +1,48 @@
 import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Button, StyleSheet, TextInput, View } from 'react-native';
+import { Button, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import ItemGrid from '../../../app/components/item-grid';
 import { ThemedText } from '../../../app/components/themed-text';
 import { ThemedView } from '../../../app/components/themed-view';
+import { isListTag, getListDisplayName, LIST_TAGS } from '../../../app/constants';
 import { useItems } from '../../../app/hooks/use-items';
+import { isItemHidden } from '../../../app/utils/item-helpers';
 
 export default function ClosetScreen() {
   const { items, loading, refresh } = useItems();
   const [q, setQ] = useState('');
   const [showHidden, setShowHidden] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedList, setSelectedList] = useState<string | null>(null);
 
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
+  // Separate regular tags from list tags
+  const { regularTags, listTags } = useMemo(() => {
+    const regular = new Set<string>();
+    const lists = new Set<string>();
     items.forEach((item) => {
-      item.tags?.forEach((tag) => tags.add(tag));
+      item.tags?.forEach((tag) => {
+        if (isListTag(tag)) {
+          lists.add(tag);
+        } else {
+          regular.add(tag);
+        }
+      });
     });
-    return Array.from(tags);
+    return { regularTags: Array.from(regular), listTags: Array.from(lists) };
   }, [items]);
 
   const visible = useMemo(() => {
     return items.filter((i) => {
-      if (!showHidden && i.hidden) return false;
+      if (!showHidden && isItemHidden(i)) return false;
+      // Filter by list
+      if (selectedList && (!i.tags || !i.tags.includes(selectedList))) return false;
+      // Filter by tag
       if (selectedTag && (!i.tags || !i.tags.includes(selectedTag))) return false;
       if (!q) return true;
       const s = `${i.name} ${i.category ?? ''} ${i.tags?.join(' ') ?? ''}`.toLowerCase();
       return s.includes(q.toLowerCase());
     });
-  }, [items, q, showHidden, selectedTag]);
+  }, [items, q, showHidden, selectedTag, selectedList]);
 
   return (
     <ThemedView style={styles.container}>
@@ -45,17 +59,46 @@ export default function ClosetScreen() {
         <Button title="Refresh" onPress={refresh} />
       </View>
 
-      <View style={styles.tagFilters}>
-        {allTags.map((tag) => (
-          <Button
-            key={tag}
-            title={tag}
-            onPress={() => setSelectedTag(selectedTag === tag ? null : tag)}
-            color={selectedTag === tag ? 'blue' : 'gray'}
-          />
-        ))}
-        {selectedTag && <Button title="Clear Tag Filter" onPress={() => setSelectedTag(null)} />}
-      </View>
+      {/* List filters */}
+      {listTags.length > 0 && (
+        <View style={styles.listFilters}>
+          <ThemedText type="defaultSemiBold" style={styles.filterLabel}>Lists:</ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            <Button
+              title={`★ Favorites`}
+              onPress={() => setSelectedList(selectedList === LIST_TAGS.FAVORITES ? null : LIST_TAGS.FAVORITES)}
+              color={selectedList === LIST_TAGS.FAVORITES ? '#f0ad4e' : 'gray'}
+            />
+            {listTags.filter((t) => t !== LIST_TAGS.FAVORITES).map((tag) => (
+              <Button
+                key={tag}
+                title={getListDisplayName(tag)}
+                onPress={() => setSelectedList(selectedList === tag ? null : tag)}
+                color={selectedList === tag ? 'blue' : 'gray'}
+              />
+            ))}
+            {selectedList && <Button title="Clear" onPress={() => setSelectedList(null)} />}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Tag filters */}
+      {regularTags.length > 0 && (
+        <View style={styles.tagFilters}>
+          <ThemedText type="defaultSemiBold" style={styles.filterLabel}>Tags:</ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            {regularTags.map((tag) => (
+              <Button
+                key={tag}
+                title={tag}
+                onPress={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                color={selectedTag === tag ? 'blue' : 'gray'}
+              />
+            ))}
+            {selectedTag && <Button title="Clear" onPress={() => setSelectedTag(null)} />}
+          </ScrollView>
+        </View>
+      )}
 
       {loading ? <ThemedText>Loading...</ThemedText> : <ItemGrid items={visible} />}
 
@@ -74,11 +117,24 @@ const styles = StyleSheet.create({
   controls: { padding: 12, gap: 8 },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 8 },
   empty: { padding: 20, alignItems: 'center' },
-  tagFilters: {
+  listFilters: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
     paddingHorizontal: 12,
     marginTop: 8,
+    gap: 8,
+  },
+  tagFilters: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  filterLabel: {
+    minWidth: 50,
+  },
+  filterScroll: {
+    flexDirection: 'row',
   },
 });

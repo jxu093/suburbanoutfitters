@@ -8,106 +8,77 @@ describe('storage CRUD and hiddenUntil behavior', () => {
     const rows: any[] = [];
     let nextId = 1;
 
+    // Create mock database with new SDK 54 API
     jest.doMock('expo-sqlite', () => ({
-      openDatabase: (name: string) => ({
-        transaction: (cb: (tx: any) => void) => {
-          const tx = {
-            executeSql: (sql: string, args: any[] = [], success?: (t: any, res: any) => void) => {
-              const sqlTrim = sql.trim();
+      openDatabaseSync: (name: string) => ({
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockImplementation(async (sql: string, args: any[] = []) => {
+          const sqlTrim = sql.trim();
 
-              if (/^CREATE TABLE/i.test(sqlTrim)) {
-                success?.(tx, { rows: { _array: [] } });
-                return;
+          if (/^INSERT INTO items/i.test(sqlTrim)) {
+            const item: any = {
+              id: nextId++,
+              name: args[0],
+              category: args[1],
+              imageUri: args[2],
+              thumbUri: args[3],
+              notes: args[4],
+              tags: args[5],
+              createdAt: args[6],
+              wornAt: args[7],
+              hidden: args[8],
+              hiddenUntil: args[9],
+            };
+            rows.unshift(item);
+            return { lastInsertRowId: item.id };
+          }
+
+          if (/UPDATE items SET hidden = 0, hiddenUntil = NULL WHERE hiddenUntil IS NOT NULL/i.test(sqlTrim)) {
+            const ts = args[0];
+            for (const r of rows) {
+              if (r.hiddenUntil != null && r.hiddenUntil <= ts) {
+                r.hidden = 0;
+                r.hiddenUntil = null;
               }
+            }
+            return {};
+          }
 
-              if (/^PRAGMA table_info\(items\)/i.test(sqlTrim)) {
-                success?.(tx, { rows: { _array: [] } });
-                return;
-              }
+          if (/^UPDATE items SET/i.test(sqlTrim)) {
+            const id = args[args.length - 1];
+            const target = rows.find((r) => r.id === id);
+            if (target) {
+              const setPart = sqlTrim.match(/UPDATE items SET (.*) WHERE/i)?.[1] ?? '';
+              const fields = setPart.split(',').map((s) => s.split('=')[0].trim());
+              fields.forEach((f, i) => {
+                target[f] = args[i];
+              });
+            }
+            return {};
+          }
 
-              if (/^ALTER TABLE/i.test(sqlTrim)) {
-                success?.(tx, { rows: { _array: [] } });
-                return;
-              }
+          if (/^DELETE FROM items WHERE id = \?/i.test(sqlTrim)) {
+            const id = args[0];
+            const idx = rows.findIndex((r) => r.id === id);
+            if (idx !== -1) rows.splice(idx, 1);
+            return {};
+          }
 
-              if (/^INSERT INTO items/i.test(sqlTrim)) {
-                const item: any = {
-                  id: nextId++,
-                  name: args[0],
-                  category: args[1],
-                  imageUri: args[2],
-                  thumbUri: args[3],
-                  notes: args[4],
-                  tags: args[5],
-                  createdAt: args[6],
-                  wornAt: args[7],
-                  hidden: args[8],
-                  hiddenUntil: args[9],
-                };
-                rows.unshift(item);
-                success?.(tx, { insertId: item.id });
-                return;
-              }
-
-              if (/^SELECT \* FROM items ORDER BY createdAt DESC;/i.test(sqlTrim)) {
-                success?.(tx, { rows: { _array: rows.slice() } });
-                return;
-              }
-
-              if (/^SELECT \* FROM items WHERE id = \?/i.test(sqlTrim)) {
-                const id = args[0];
-                const found = rows.find((r) => r.id === id);
-                success?.(tx, { rows: { _array: found ? [found] : [] } });
-                return;
-              }
-
-              // unhideExpired update (must run before generic UPDATE handling)
-              if (/UPDATE items SET hidden = 0, hiddenUntil = NULL WHERE hiddenUntil IS NOT NULL AND hiddenUntil <= \?;?/i.test(sqlTrim)) {
-                const ts = args[0];
-                for (const r of rows) {
-                  if (r.hiddenUntil != null && r.hiddenUntil <= ts) {
-                    r.hidden = 0;
-                    r.hiddenUntil = null;
-                  }
-                }
-                success?.(tx, { rows: { _array: [] } });
-                return;
-              }
-
-              if (/^UPDATE items SET/i.test(sqlTrim)) {
-                // naive update: map through fields by args
-                // last arg is id
-                const id = args[args.length - 1];
-                const target = rows.find((r) => r.id === id);
-                if (target) {
-                  // parse set clause to determine number of fields
-                  // We'll apply args in order to the fields
-                  // But simpler: apply by matching column names in sql
-                  const setPart = sqlTrim.match(/UPDATE items SET (.*) WHERE/i)?.[1] ?? '';
-                  const fields = setPart.split(',').map((s) => s.split('=')[0].trim());
-                  fields.forEach((f, i) => {
-                    const col = f;
-                    target[col] = args[i];
-                  });
-                }
-                success?.(tx, { rows: { _array: [] } });
-                return;
-              }
-
-              if (/^DELETE FROM items WHERE id = \?/i.test(sqlTrim)) {
-                const id = args[0];
-                const idx = rows.findIndex((r) => r.id === id);
-                if (idx !== -1) rows.splice(idx, 1);
-                success?.(tx, { rows: { _array: [] } });
-                return;
-              }
-
-              // fallback
-              success?.(tx, { rows: { _array: [] } });
-            },
-          };
-          cb(tx);
-        },
+          return {};
+        }),
+        getAllAsync: jest.fn().mockImplementation(async (sql: string) => {
+          if (/^SELECT \* FROM items ORDER BY createdAt DESC/i.test(sql.trim())) {
+            return rows.slice();
+          }
+          return [];
+        }),
+        getFirstAsync: jest.fn().mockImplementation(async (sql: string, args: any[] = []) => {
+          if (/^SELECT \* FROM items WHERE id = \?/i.test(sql.trim())) {
+            const id = args[0];
+            return rows.find((r) => r.id === id) ?? null;
+          }
+          return null;
+        }),
       }),
     }));
 

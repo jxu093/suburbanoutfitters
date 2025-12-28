@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
+import * as Location from 'expo-location';
 import OutfitPreview from '../../components/outfit-preview';
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
 import { useItems } from '../../hooks/use-items';
 import { pickRandomOutfit, WeatherCondition } from '../../services/randomizer';
+import { getCurrentWeather, isWeatherApiConfigured, mapTempToCondition } from '../../services/weather';
 import { Item } from '../../types';
 
 export default function RandomOutfitScreen() {
@@ -19,6 +21,8 @@ export default function RandomOutfitScreen() {
   const [excludedTags, setExcludedTags] = useState('');
   const [weatherInput, setWeatherInput] = useState(''); // User input for weather
   const [currentWeather, setCurrentWeather] = useState<WeatherCondition | undefined>(undefined);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherInfo, setWeatherInfo] = useState<string | null>(null);
 
   const allAvailableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -36,34 +40,57 @@ export default function RandomOutfitScreen() {
     return Array.from(tags);
   }, [items]);
 
-  async function fetchWeather(city: string) {
-    // This is a placeholder for actual weather API integration.
-    // In a real app, you'd use a service like OpenWeatherMap, AccuWeather, etc.
-    // For now, we'll simulate based on user input or provide a mock.
-    Alert.alert(
-      'Weather API Placeholder',
-      `Integration with a weather API for "${city}" is not yet implemented. Please manually select a weather condition or provide a temperature.`,
-      [{ text: 'OK' }]
-    );
-    // Example of how you might set a condition based on a manual override or mock
-    // setCurrentWeather('mild');
+  async function fetchWeatherFromLocation() {
+    if (!isWeatherApiConfigured()) {
+      Alert.alert(
+        'API Not Configured',
+        'Weather API key is not set. Please add EXPO_PUBLIC_WEATHER_API_KEY to your environment variables, or manually enter weather conditions.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setWeatherLoading(true);
+    setWeatherInfo(null);
+
+    try {
+      // Request location permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to get weather for your area.');
+        setWeatherLoading(false);
+        return;
+      }
+
+      // Get current location
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      // Fetch weather
+      const weather = await getCurrentWeather(latitude, longitude);
+
+      setCurrentWeather(weather.condition);
+      setWeatherInput(`${weather.temperature}°C`);
+      setWeatherInfo(`${weather.city}: ${weather.temperature}°C, ${weather.description}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to get weather';
+      Alert.alert('Weather Error', message);
+    } finally {
+      setWeatherLoading(false);
+    }
   }
 
   function handleWeatherInputChange(text: string) {
     setWeatherInput(text);
+    setWeatherInfo(null); // Clear API info when manually editing
+
     const temp = parseFloat(text);
     if (!isNaN(temp)) {
-      // Very basic conversion: Assuming input is Celsius
-      // You'd need a more robust temp-to-condition mapping for production
-      if (temp >= 30) setCurrentWeather('hot');
-      else if (temp >= 20) setCurrentWeather('warm');
-      else if (temp >= 10) setCurrentWeather('mild');
-      else if (temp >= 0) setCurrentWeather('cool');
-      else if (temp >= -10) setCurrentWeather('cold');
-      else setCurrentWeather('freezing');
+      // Use centralized temperature-to-condition mapping
+      setCurrentWeather(mapTempToCondition(temp));
     } else {
       // If not a number, try to match directly to WeatherCondition strings
-      const lowerText = text.toLowerCase();
+      const lowerText = text.toLowerCase().trim();
       if (['hot', 'warm', 'mild', 'cool', 'cold', 'freezing'].includes(lowerText)) {
         setCurrentWeather(lowerText as WeatherCondition);
       } else {
@@ -161,13 +188,23 @@ export default function RandomOutfitScreen() {
         <View style={styles.section}>
           <ThemedText type="subtitle">Weather Condition (Optional)</ThemedText>
           <TextInput
-            placeholder="e.g., hot, cold, 25C (manual input)"
+            placeholder="e.g., hot, cold, 25 (temperature in °C)"
             value={weatherInput}
             onChangeText={handleWeatherInputChange}
             style={styles.input}
           />
-          {currentWeather && <ThemedText>Current Weather Condition: {currentWeather}</ThemedText>}
-          <Button title="Get Weather (Placeholder)" onPress={() => fetchWeather('current location')} />
+          {currentWeather && <ThemedText>Weather Condition: {currentWeather}</ThemedText>}
+          {weatherInfo && <ThemedText style={styles.weatherInfo}>{weatherInfo}</ThemedText>}
+          <View style={styles.row}>
+            {weatherLoading ? (
+              <ActivityIndicator />
+            ) : (
+              <Button title="Use My Location" onPress={fetchWeatherFromLocation} />
+            )}
+            {currentWeather && (
+              <Button title="Clear" onPress={() => { setCurrentWeather(undefined); setWeatherInput(''); setWeatherInfo(null); }} />
+            )}
+          </View>
         </View>
 
         <Button title="Generate Outfit" onPress={generateOutfit} />
@@ -219,5 +256,9 @@ const styles = StyleSheet.create({
   },
   generatedOutfitTitle: {
     textAlign: 'center',
+  },
+  weatherInfo: {
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
 });

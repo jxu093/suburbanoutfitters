@@ -1,13 +1,24 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Alert, Button, StyleSheet, View } from 'react-native';
+import { LIST_TAGS, isListTag, getListDisplayName, createListTag } from '../constants';
 import { useItems } from '../hooks/use-items';
 import type { Item } from '../types';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 export default function ItemCard({ item }: { item: Item }) {
-  const { update, remove, markAsWorn } = useItems();
+  const { items, update, remove, markAsWorn } = useItems();
+
+  // Get all unique list tags from all items
+  const allListTags = Array.from(
+    new Set(
+      items.flatMap((i) => (i.tags ?? []).filter(isListTag))
+    )
+  );
+
+  // Check if item is in favorites
+  const isFavorite = item.tags?.includes(LIST_TAGS.FAVORITES) ?? false;
 
   async function toggleHidden() {
     if (item.hidden) {
@@ -30,6 +41,72 @@ export default function ItemCard({ item }: { item: Item }) {
     ]);
   }
 
+  async function toggleFavorite() {
+    const currentTags = item.tags ?? [];
+    if (isFavorite) {
+      await update(item.id!, { tags: currentTags.filter((t) => t !== LIST_TAGS.FAVORITES) });
+    } else {
+      await update(item.id!, { tags: [...currentTags, LIST_TAGS.FAVORITES] });
+    }
+  }
+
+  async function addToList(listTag: string) {
+    const currentTags = item.tags ?? [];
+    if (!currentTags.includes(listTag)) {
+      await update(item.id!, { tags: [...currentTags, listTag] });
+    }
+  }
+
+  async function removeFromList(listTag: string) {
+    const currentTags = item.tags ?? [];
+    await update(item.id!, { tags: currentTags.filter((t) => t !== listTag) });
+  }
+
+  function showListMenu() {
+    const itemListTags = (item.tags ?? []).filter(isListTag);
+    const availableLists = allListTags.filter((t) => !itemListTags.includes(t));
+
+    const buttons: any[] = [];
+
+    // Show lists item is currently in (to remove)
+    itemListTags.forEach((tag) => {
+      buttons.push({
+        text: `✓ ${getListDisplayName(tag)}`,
+        onPress: () => removeFromList(tag),
+      });
+    });
+
+    // Show available lists to add to
+    availableLists.forEach((tag) => {
+      buttons.push({
+        text: `Add to ${getListDisplayName(tag)}`,
+        onPress: () => addToList(tag),
+      });
+    });
+
+    // Option to create new list
+    buttons.push({
+      text: '+ Create new list',
+      onPress: () => {
+        Alert.prompt(
+          'New List',
+          'Enter a name for the new list:',
+          async (name) => {
+            if (name && name.trim()) {
+              const newTag = createListTag(name.trim());
+              await addToList(newTag);
+            }
+          },
+          'plain-text'
+        );
+      },
+    });
+
+    buttons.push({ text: 'Cancel', style: 'cancel' });
+
+    Alert.alert('Manage Lists', 'Add or remove from lists:', buttons);
+  }
+
   return (
     <ThemedView style={styles.card}>
       <Link href={`/item/${item.id}`}>
@@ -39,6 +116,8 @@ export default function ItemCard({ item }: { item: Item }) {
       {item.category ? <ThemedText type="subtitle">{item.category}</ThemedText> : null}
 
       <View style={styles.actions}>
+        <Button title={isFavorite ? '★' : '☆'} onPress={toggleFavorite} color={isFavorite ? '#f0ad4e' : 'gray'} />
+        <Button title="Lists" onPress={showListMenu} />
         <Button title={item.hidden ? 'Unhide' : 'Hide'} onPress={toggleHidden} />
         <Button title="Wear" onPress={() => markAsWorn(item.id!)} />
         <Button title="Delete" color="#d9534f" onPress={confirmDelete} />

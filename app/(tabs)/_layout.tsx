@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { TabBarIcon } from '../components/navigation/TabBarIcon'; // Corrected import path
-import { Colors } from '../constants/theme'; // Corrected import path
+import { TabBarIcon } from '../components/navigation/TabBarIcon';
+import { Colors } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
 
 export default function TabLayout() {
@@ -14,13 +14,11 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
       }}>
+      {/* Hide the index tab - it just redirects to closet */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -35,7 +33,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="add"
         options={{
-          title: 'Add Item',
+          title: 'Add',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'add-circle' : 'add-circle-outline'} color={color} />
           ),
@@ -51,21 +49,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="outfits/builder"
-        options={{
-          title: 'Outfit Builder',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'build' : 'build-outline'} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="outfits/random"
         options={{
-          title: 'Random Outfit',
+          title: 'Random',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'shuffle' : 'shuffle-outline'} color={color} />
           ),
+        }}
+      />
+      {/* Hide these screens from tab bar - they're accessed via navigation */}
+      <Tabs.Screen
+        name="outfits/builder"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="item/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="outfits/[id]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

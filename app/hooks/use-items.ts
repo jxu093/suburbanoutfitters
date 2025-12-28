@@ -1,53 +1,60 @@
 import { useEffect, useState } from 'react';
 import { createItem, getItems, initDB, updateItem, deleteItem } from '../services/storage';
+import { deleteImageFiles } from '../services/image-service';
 import type { Item } from '../types';
+import type { DBItemRow } from '../services/storage';
+import { HIDE_DURATION_MS } from '../constants';
+
+// Convert DB rows to Item shape (parse tags and compute hidden state)
+function normalizeItems(rows: DBItemRow[]): Item[] {
+  const now = Date.now();
+  return rows.map((r) => {
+    const hiddenUntil = r.hiddenUntil ?? null;
+    const isHidden = !!r.hidden || (hiddenUntil !== null && hiddenUntil > now);
+    return {
+      ...r,
+      tags: r.tags ? JSON.parse(r.tags) : null,
+      hidden: isHidden,
+      hiddenUntil: hiddenUntil,
+    };
+  }) as Item[];
+}
 
 export function useItems() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   async function refresh() {
     setLoading(true);
-    const rows = await getItems();
-    // Convert DB rows to Item shape (parse tags and booleans)
-    const now = Date.now();
-    const normalized = rows.map((r: any) => {
-      const hiddenUntil = r.hiddenUntil ?? null;
-      const isHidden = !!r.hidden || (hiddenUntil && hiddenUntil > now);
-      return {
-        ...r,
-        tags: r.tags ? JSON.parse(r.tags) : null,
-        hidden: isHidden,
-        hiddenUntil: hiddenUntil,
-      };
-    }) as Item[];
-
-    setItems(normalized);
-    setLoading(false);
+    setError(null);
+    try {
+      const rows = await getItems();
+      setItems(normalizeItems(rows));
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error('Failed to load items'));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
-      await initDB();
-      const rows = await getItems();
+      try {
+        await initDB();
+        const rows = await getItems();
 
-      if (!cancelled) {
-        const now = Date.now();
-        const normalized = rows.map((r: any) => {
-          const hiddenUntil = r.hiddenUntil ?? null;
-          const isHidden = !!r.hidden || (hiddenUntil && hiddenUntil > now);
-          return {
-            ...r,
-            tags: r.tags ? JSON.parse(r.tags) : null,
-            hidden: isHidden,
-            hiddenUntil: hiddenUntil,
-          };
-        }) as Item[];
-
-        setItems(normalized);
-        setLoading(false);
+        if (!cancelled) {
+          setItems(normalizeItems(rows));
+          setLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e : new Error('Failed to initialize'));
+          setLoading(false);
+        }
       }
     };
 
@@ -59,14 +66,25 @@ export function useItems() {
   }, []);
 
   async function add(item: Item) {
+    const now = Date.now();
     const dbRow: any = {
       ...item,
       tags: item.tags ? JSON.stringify(item.tags) : null,
       hidden: item.hidden ? 1 : 0,
+      createdAt: item.createdAt ?? now,
     };
 
     const id = await createItem(dbRow);
-    await refresh();
+
+    // Optimistically update local state instead of full refresh
+    const newItem: Item = {
+      ...item,
+      id,
+      createdAt: dbRow.createdAt,
+      hidden: !!item.hidden,
+    };
+    setItems((prev) => [newItem, ...prev]);
+
     return id;
   }
 
@@ -76,19 +94,38 @@ export function useItems() {
     if (typeof changes.hidden === 'boolean') dbChanges.hidden = changes.hidden ? 1 : 0;
     if ('hiddenUntil' in changes) dbChanges.hiddenUntil = (changes as any).hiddenUntil ?? null;
     await updateItem(id, dbChanges);
-    await refresh();
+
+    // Optimistically update local state instead of full refresh
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...changes };
+        // Recompute hidden state if hiddenUntil changed
+        if ('hiddenUntil' in changes) {
+          const hiddenUntil = changes.hiddenUntil ?? null;
+          updated.hidden = !!changes.hidden || (hiddenUntil !== null && hiddenUntil > Date.now());
+        }
+        return updated;
+      })
+    );
   }
 
   async function remove(id: number) {
+    // Find the item to get its image URIs before deleting
+    const item = items.find((i) => i.id === id);
+    if (item) {
+      await deleteImageFiles(item.imageUri, item.thumbUri);
+    }
     await deleteItem(id);
-    await refresh();
+
+    // Optimistically update local state instead of full refresh
+    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   async function markAsWorn(id: number) {
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const hideUntilTimestamp = Date.now() + SEVEN_DAYS_MS;
+    const hideUntilTimestamp = Date.now() + HIDE_DURATION_MS.SEVEN_DAYS;
     await update(id, { wornAt: Date.now(), hidden: true, hiddenUntil: hideUntilTimestamp });
   }
 
-  return { items, loading, refresh, add, update, remove, markAsWorn };
+  return { items, loading, error, refresh, add, update, remove, markAsWorn };
 }

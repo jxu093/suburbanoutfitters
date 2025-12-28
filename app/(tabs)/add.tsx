@@ -61,7 +61,7 @@ export default function AddItemScreen() {
       <TextInput
         placeholder="Tags (comma-separated)"
         value={tags.join(', ')}
-        onChangeText={(text) => setTags(text.split(',').map((tag) => tag.trim()))}
+        onChangeText={(text) => setTags(text.split(',').map((tag) => tag.trim()).filter(Boolean))}
         style={styles.input}
       />
 

@@ -2,22 +2,12 @@ import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'wardrobe.db';
 
-let db: any = null;
-function getDB() {
+let db: SQLite.SQLiteDatabase | null = null;
+
+function getDB(): SQLite.SQLiteDatabase {
   if (db) return db;
-
-  // Prefer openDatabase, fallback to openDatabaseSync if available
-  if (typeof (SQLite as any).openDatabase === 'function') {
-    db = (SQLite as any).openDatabase(DB_NAME);
-    return db;
-  }
-
-  if (typeof (SQLite as any).openDatabaseSync === 'function') {
-    db = (SQLite as any).openDatabaseSync(DB_NAME);
-    return db;
-  }
-
-  throw new Error('expo-sqlite: openDatabase is not available in this environment. Ensure you are running on a native device/emulator and that expo-sqlite is installed.');
+  db = SQLite.openDatabaseSync(DB_NAME);
+  return db;
 }
 
 export type DBItemRow = {
@@ -34,27 +24,12 @@ export type DBItemRow = {
   hiddenUntil?: number | null; // unix ms timestamp when hidden expires
 };
 
-function txExec(sql: string, args: any[] = []): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const database = getDB();
-    database.transaction((tx: any) => {
-      tx.executeSql(
-        sql,
-        args,
-        (_: any, result: any) => resolve(result),
-        (_: any, err: any) => {
-          reject(err);
-          return false;
-        }
-      );
-    });
-  });
-}
-
 async function ensureSchema() {
-  // create table if not exists
-  await txExec(
-    `CREATE TABLE IF NOT EXISTS items (
+  const database = getDB();
+
+  // create items table if not exists
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT,
       category TEXT,
@@ -64,32 +39,26 @@ async function ensureSchema() {
       tags TEXT,
       createdAt INTEGER,
       wornAt INTEGER,
-      hidden INTEGER
-    );`
-  );
-
-  // add hiddenUntil column if missing
-  const res: any = await txExec(`PRAGMA table_info(items);`);
-  const cols = (res.rows?._array ?? []) as any[];
-  const hasHiddenUntil = cols.some((c) => c.name === 'hiddenUntil');
-  if (!hasHiddenUntil) {
-    await txExec(`ALTER TABLE items ADD COLUMN hiddenUntil INTEGER;`);
-  }
-
-  // Create outfits table if missing
-  const outfitsRes: any = await txExec(`PRAGMA table_info(outfits);`);
-  const outfitsCols = (outfitsRes.rows?._array ?? []) as any[];
-  if (outfitsCols.length === 0) {
-    await txExec(
-      `CREATE TABLE IF NOT EXISTS outfits (
-        id INTEGER PRIMARY KEY NOT NULL,
-        name TEXT,
-        itemIds TEXT,
-        notes TEXT,
-        createdAt INTEGER
-      );`
+      hidden INTEGER,
+      hiddenUntil INTEGER
     );
-  }
+  `);
+
+  // Create outfits table if not exists
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS outfits (
+      id INTEGER PRIMARY KEY NOT NULL,
+      name TEXT,
+      itemIds TEXT,
+      notes TEXT,
+      createdAt INTEGER
+    );
+  `);
+
+  // Create indexes for better query performance
+  await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);`);
+  await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_hidden ON items(hidden);`);
+  await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_createdAt ON items(createdAt);`);
 }
 
 export async function initDB() {
@@ -98,9 +67,11 @@ export async function initDB() {
   await unhideExpired();
 }
 
-export async function createItem(item: DBItemRow) {
+export async function createItem(item: DBItemRow): Promise<number> {
+  const database = getDB();
   const now = Date.now();
-  const res: any = await txExec(
+
+  const result = await database.runAsync(
     `INSERT INTO items (name, category, imageUri, thumbUri, notes, tags, createdAt, wornAt, hidden, hiddenUntil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       item.name,
@@ -116,45 +87,48 @@ export async function createItem(item: DBItemRow) {
     ]
   );
 
-  // res.insertId is available in web/cordova, but in expo-sqlite the insertId is in res.insertId
-  const insertId = res.insertId ?? null;
-  return insertId;
+  return result.lastInsertRowId;
 }
 
 export async function setHiddenUntil(id: number, ts: number | null) {
-  await txExec(`UPDATE items SET hidden = ?, hiddenUntil = ? WHERE id = ?;`, [ts ? 1 : 0, ts, id]);
+  const database = getDB();
+  await database.runAsync(`UPDATE items SET hidden = ?, hiddenUntil = ? WHERE id = ?;`, [ts ? 1 : 0, ts, id]);
 }
 
 export async function unhideExpired() {
+  const database = getDB();
   const now = Date.now();
-  await txExec(`UPDATE items SET hidden = 0, hiddenUntil = NULL WHERE hiddenUntil IS NOT NULL AND hiddenUntil <= ?;`, [now]);
+  await database.runAsync(`UPDATE items SET hidden = 0, hiddenUntil = NULL WHERE hiddenUntil IS NOT NULL AND hiddenUntil <= ?;`, [now]);
 }
+
 export async function getItems(): Promise<DBItemRow[]> {
+  const database = getDB();
   // cleanup expired hidden flags before returning
   await unhideExpired();
-  const res: any = await txExec(`SELECT * FROM items ORDER BY createdAt DESC;`);
-  const rows = res.rows?._array ?? [];
-  return rows as DBItemRow[];
+  const rows = await database.getAllAsync<DBItemRow>(`SELECT * FROM items ORDER BY createdAt DESC;`);
+  return rows;
 }
 
 export async function getItemById(id: number): Promise<DBItemRow | null> {
-  const res: any = await txExec(`SELECT * FROM items WHERE id = ? LIMIT 1;`, [id]);
-  const rows = res.rows?._array ?? [];
-  return rows[0] ?? null;
+  const database = getDB();
+  const row = await database.getFirstAsync<DBItemRow>(`SELECT * FROM items WHERE id = ? LIMIT 1;`, [id]);
+  return row ?? null;
 }
 
 export async function updateItem(id: number, changes: Partial<DBItemRow>) {
+  const database = getDB();
   const fields = Object.keys(changes);
   if (fields.length === 0) return;
   const setClause = fields.map((f) => `${f} = ?`).join(', ');
   const args = fields.map((f) => (changes as any)[f]);
   args.push(id);
 
-  await txExec(`UPDATE items SET ${setClause} WHERE id = ?;`, args);
+  await database.runAsync(`UPDATE items SET ${setClause} WHERE id = ?;`, args);
 }
 
 export async function deleteItem(id: number) {
-  await txExec(`DELETE FROM items WHERE id = ?;`, [id]);
+  const database = getDB();
+  await database.runAsync(`DELETE FROM items WHERE id = ?;`, [id]);
 }
 
 // Outfits CRUD
@@ -166,37 +140,40 @@ export type DBOutfitRow = {
   createdAt?: number;
 };
 
-export async function createOutfit(outfit: DBOutfitRow) {
+export async function createOutfit(outfit: DBOutfitRow): Promise<number> {
+  const database = getDB();
   const now = Date.now();
-  const res: any = await txExec(
+  const result = await database.runAsync(
     `INSERT INTO outfits (name, itemIds, notes, createdAt) VALUES (?, ?, ?, ?);`,
     [outfit.name, outfit.itemIds, outfit.notes ?? null, outfit.createdAt ?? now]
   );
-  return res.insertId ?? null;
+  return result.lastInsertRowId;
 }
 
 export async function getOutfits(): Promise<DBOutfitRow[]> {
-  const res: any = await txExec(`SELECT * FROM outfits ORDER BY createdAt DESC;`);
-  const rows = res.rows?._array ?? [];
-  return rows as DBOutfitRow[];
+  const database = getDB();
+  const rows = await database.getAllAsync<DBOutfitRow>(`SELECT * FROM outfits ORDER BY createdAt DESC;`);
+  return rows;
 }
 
 export async function getOutfitById(id: number): Promise<DBOutfitRow | null> {
-  const res: any = await txExec(`SELECT * FROM outfits WHERE id = ? LIMIT 1;`, [id]);
-  const rows = res.rows?._array ?? [];
-  return rows[0] ?? null;
+  const database = getDB();
+  const row = await database.getFirstAsync<DBOutfitRow>(`SELECT * FROM outfits WHERE id = ? LIMIT 1;`, [id]);
+  return row ?? null;
 }
 
 export async function updateOutfit(id: number, changes: Partial<DBOutfitRow>) {
+  const database = getDB();
   const fields = Object.keys(changes);
   if (fields.length === 0) return;
   const setClause = fields.map((f) => `${f} = ?`).join(', ');
   const args = fields.map((f) => (changes as any)[f]);
   args.push(id);
 
-  await txExec(`UPDATE outfits SET ${setClause} WHERE id = ?;`, args);
+  await database.runAsync(`UPDATE outfits SET ${setClause} WHERE id = ?;`, args);
 }
 
 export async function deleteOutfit(id: number) {
-  await txExec(`DELETE FROM outfits WHERE id = ?;`, [id]);
+  const database = getDB();
+  await database.runAsync(`DELETE FROM outfits WHERE id = ?;`, [id]);
 }

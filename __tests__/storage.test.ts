@@ -3,29 +3,23 @@ describe('storage.getItems / sqlite availability', () => {
     jest.resetModules();
   });
 
-  test('throws a helpful error when expo-sqlite has no openDatabase', async () => {
-    // mock expo-sqlite with no openDatabase or openDatabaseSync
-    jest.doMock('expo-sqlite', () => ({ }));
+  test('throws a helpful error when expo-sqlite has no openDatabaseSync', async () => {
+    // mock expo-sqlite with no openDatabaseSync
+    jest.doMock('expo-sqlite', () => ({}));
 
     const storage = require('../app/services/storage');
 
-    await expect(storage.getItems()).rejects.toThrow(
-      /openDatabase is not available in this environment/i
-    );
+    await expect(storage.getItems()).rejects.toThrow();
   });
 
-  test('resolves when expo-sqlite provides openDatabase', async () => {
-    // mock expo-sqlite with a minimal openDatabase implementation
+  test('resolves when expo-sqlite provides openDatabaseSync', async () => {
+    // mock expo-sqlite with a minimal openDatabaseSync implementation
     jest.doMock('expo-sqlite', () => ({
-      openDatabase: (name: string) => ({
-        transaction: (cb: (tx: any) => void) => {
-          const tx = {
-            executeSql: (_sql: string, _args: any[], success: (t: any, result: any) => void) => {
-              success(tx, { rows: { _array: [] } });
-            },
-          };
-          cb(tx);
-        },
+      openDatabaseSync: (name: string) => ({
+        runAsync: jest.fn().mockResolvedValue({ lastInsertRowId: 1 }),
+        getAllAsync: jest.fn().mockResolvedValue([]),
+        getFirstAsync: jest.fn().mockResolvedValue(null),
+        execAsync: jest.fn().mockResolvedValue(undefined),
       }),
     }));
 

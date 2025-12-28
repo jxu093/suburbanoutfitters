@@ -3,6 +3,30 @@ import { useItems } from '../app/hooks/use-items';
 import * as storage from '../app/services/storage';
 import type { Item } from '../app/types';
 
+// Mock expo-file-system
+jest.mock('expo-file-system', () => ({
+  documentDirectory: '/mock/documents/',
+  makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
+  copyAsync: jest.fn().mockResolvedValue(undefined),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: true }),
+}));
+
+// Mock expo-image-manipulator
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn().mockResolvedValue({ uri: '/mock/image.jpg', width: 100, height: 100 }),
+  SaveFormat: { JPEG: 'jpeg' },
+}));
+
+// Mock expo-image-picker
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true }),
+  launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true }),
+  MediaTypeOptions: { Images: 'Images' },
+}));
+
 // Mock expo-sqlite with a minimal in-memory implementation
 jest.mock('expo-sqlite', () => ({
   openDatabase: () => ({
@@ -136,6 +160,7 @@ describe('useItems hook', () => {
       })
     );
     expect(newId).not.toBeNull();
-    expect(storage.getItems).toHaveBeenCalledTimes(2); // Once on mount, once after add
+    // With optimistic updates, getItems is only called once on mount (not after add)
+    expect(storage.getItems).toHaveBeenCalledTimes(1);
   });
 });
