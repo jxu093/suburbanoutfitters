@@ -8,6 +8,8 @@ import { useItems } from '../hooks/use-items';
 export default function AddItemScreen() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  const [notes, setNotes] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [picked, setPicked] = useState<any>(null);
   const { add } = useItems();
 
@@ -18,6 +20,8 @@ export default function AddItemScreen() {
       category,
       imageUri: picked?.uri ?? null,
       thumbUri: picked?.thumbnailUri ?? null,
+      notes,
+      tags,
       createdAt: Date.now(),
     });
 
@@ -25,6 +29,8 @@ export default function AddItemScreen() {
       alert('Saved');
       setName('');
       setCategory('');
+      setNotes('');
+      setTags([]);
       setPicked(null);
     }
   }
@@ -42,6 +48,20 @@ export default function AddItemScreen() {
         placeholder="Category"
         value={category}
         onChangeText={setCategory}
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Notes"
+        value={notes}
+        onChangeText={setNotes}
+        style={styles.input}
+        multiline
+      />
+      {/* TODO: Implement a better tag input component */}
+      <TextInput
+        placeholder="Tags (comma-separated)"
+        value={tags.join(', ')}
+        onChangeText={(text) => setTags(text.split(',').map((tag) => tag.trim()))}
         style={styles.input}
       />
 

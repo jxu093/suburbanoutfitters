@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createItem, getItems, initDB } from '../services/storage';
+import { createItem, getItems, initDB, updateItem, deleteItem } from '../services/storage';
 import type { Item } from '../types';
 
 export function useItems() {
@@ -27,10 +27,35 @@ export function useItems() {
   }
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const init = async () => {
       await initDB();
-      await refresh();
-    })();
+      const rows = await getItems();
+
+      if (!cancelled) {
+        const now = Date.now();
+        const normalized = rows.map((r: any) => {
+          const hiddenUntil = r.hiddenUntil ?? null;
+          const isHidden = !!r.hidden || (hiddenUntil && hiddenUntil > now);
+          return {
+            ...r,
+            tags: r.tags ? JSON.parse(r.tags) : null,
+            hidden: isHidden,
+            hiddenUntil: hiddenUntil,
+          };
+        }) as Item[];
+
+        setItems(normalized);
+        setLoading(false);
+      }
+    };
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function add(item: Item) {
@@ -50,14 +75,20 @@ export function useItems() {
     if (changes.tags) dbChanges.tags = JSON.stringify(changes.tags);
     if (typeof changes.hidden === 'boolean') dbChanges.hidden = changes.hidden ? 1 : 0;
     if ('hiddenUntil' in changes) dbChanges.hiddenUntil = (changes as any).hiddenUntil ?? null;
-    await import('../services/storage').then((m) => m.updateItem(id, dbChanges));
+    await updateItem(id, dbChanges);
     await refresh();
   }
 
   async function remove(id: number) {
-    await import('../services/storage').then((m) => m.deleteItem(id));
+    await deleteItem(id);
     await refresh();
   }
 
-  return { items, loading, refresh, add, update, remove };
+  async function markAsWorn(id: number) {
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const hideUntilTimestamp = Date.now() + SEVEN_DAYS_MS;
+    await update(id, { wornAt: Date.now(), hidden: true, hiddenUntil: hideUntilTimestamp });
+  }
+
+  return { items, loading, refresh, add, update, remove, markAsWorn };
 }
