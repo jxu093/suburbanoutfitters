@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Button, StyleSheet, TextInput } from 'react-native';
+import { ActionSheetIOS, Alert, Button, Platform, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import ImagePickerComponent from '../components/image-picker';
 import { ThemedText } from '../components/themed-text';
 import { ThemedView } from '../components/themed-view';
+import { useToast } from '../components/toast';
+import { CATEGORIES, getCategoryDisplayName } from '../constants';
 import { useItems } from '../hooks/use-items';
 
 export default function AddItemScreen() {
@@ -12,6 +14,37 @@ export default function AddItemScreen() {
   const [tags, setTags] = useState<string[]>([]);
   const [picked, setPicked] = useState<any>(null);
   const { add } = useItems();
+  const { showToast } = useToast();
+
+  function showCategoryPicker() {
+    const options = CATEGORIES.map(getCategoryDisplayName);
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', ...options],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex > 0) {
+            setCategory(CATEGORIES[buttonIndex - 1]);
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Select Category',
+        '',
+        [
+          ...CATEGORIES.map((cat) => ({
+            text: getCategoryDisplayName(cat),
+            onPress: () => setCategory(cat),
+          })),
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    }
+  }
 
   async function save() {
     if (!name) return alert('Please provide a name for the item');
@@ -26,7 +59,7 @@ export default function AddItemScreen() {
     });
 
     if (id) {
-      alert('Saved');
+      showToast('Item added to closet');
       setName('');
       setCategory('');
       setNotes('');
@@ -44,12 +77,11 @@ export default function AddItemScreen() {
         onChangeText={setName}
         style={styles.input}
       />
-      <TextInput
-        placeholder="Category"
-        value={category}
-        onChangeText={setCategory}
-        style={styles.input}
-      />
+      <TouchableOpacity onPress={showCategoryPicker} style={styles.picker}>
+        <ThemedText style={category ? undefined : styles.placeholder}>
+          {category ? getCategoryDisplayName(category) : 'Select Category'}
+        </ThemedText>
+      </TouchableOpacity>
       <TextInput
         placeholder="Notes"
         value={notes}
@@ -82,5 +114,14 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 8,
+  },
+  picker: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+  },
+  placeholder: {
+    color: '#999',
   },
 });

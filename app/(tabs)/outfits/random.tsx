@@ -1,16 +1,23 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Button, ScrollView, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Button, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import OutfitPreview from '../../components/outfit-preview';
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
+import { useToast } from '../../components/toast';
 import { useItems } from '../../hooks/use-items';
+import { useOutfits } from '../../hooks/use-outfits';
 import { pickRandomOutfit, WeatherCondition } from '../../services/randomizer';
 import { getCurrentWeather, isWeatherApiConfigured, mapTempToCondition } from '../../services/weather';
-import { Item } from '../../types';
+import { Item, Outfit } from '../../types';
 
 export default function RandomOutfitScreen() {
+  const router = useRouter();
   const { items, loading } = useItems();
+  const { add: addOutfit } = useOutfits();
+  const { showToast } = useToast();
   const [generatedOutfit, setGeneratedOutfit] = useState<Item[]>([]);
   const [minItems, setMinItems] = useState('2');
   const [maxItems, setMaxItems] = useState('4');
@@ -127,7 +134,12 @@ export default function RandomOutfitScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText type="title" style={styles.title}>Generate Random Outfit</ThemedText>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <ThemedText type="title">Advanced Options</ThemedText>
+        </View>
 
         <View style={styles.section}>
           <ThemedText type="subtitle">Outfit Size</ThemedText>
@@ -213,7 +225,34 @@ export default function RandomOutfitScreen() {
           <View style={styles.generatedOutfitContainer}>
             <ThemedText type="subtitle" style={styles.generatedOutfitTitle}>Generated Outfit</ThemedText>
             <OutfitPreview items={generatedOutfit} />
-            {/* TODO: Add a button to save this outfit to the user's outfits */}
+            <View style={styles.outfitActions}>
+              <TouchableOpacity
+                onPress={async () => {
+                  const o: Outfit = {
+                    name: `Outfit ${new Date().toLocaleDateString()}`,
+                    itemIds: generatedOutfit.map((i) => i.id!),
+                  };
+                  await addOutfit(o);
+                  showToast('Outfit saved');
+                }}
+                style={styles.saveBtn}
+              >
+                <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+                <ThemedText style={styles.saveBtnText}>Save Outfit</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({
+                    pathname: '/outfits/builder',
+                    params: { preselected: JSON.stringify(generatedOutfit.map((i) => i.id)) },
+                  });
+                }}
+                style={styles.editBtn}
+              >
+                <Ionicons name="create-outline" size={18} color="#007AFF" />
+                <ThemedText style={styles.editBtnText}>Edit in Builder</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -229,9 +268,14 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 20,
   },
-  title: {
-    textAlign: 'center',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 10,
+  },
+  backBtn: {
+    padding: 4,
   },
   section: {
     gap: 10,
@@ -260,5 +304,38 @@ const styles = StyleSheet.create({
   weatherInfo: {
     fontStyle: 'italic',
     opacity: 0.8,
+  },
+  outfitActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  saveBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  editBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  editBtnText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });

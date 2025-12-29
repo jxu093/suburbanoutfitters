@@ -1,6 +1,7 @@
-import { Link } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Button, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import ItemGrid from '../../../app/components/item-grid';
 import { ThemedText } from '../../../app/components/themed-text';
 import { ThemedView } from '../../../app/components/themed-view';
@@ -8,7 +9,18 @@ import { isListTag, getListDisplayName, LIST_TAGS } from '../../../app/constants
 import { useItems } from '../../../app/hooks/use-items';
 import { isItemHidden } from '../../../app/utils/item-helpers';
 
+function showIconLegend() {
+  Alert.alert(
+    'Icon Legend',
+    '★ Favorite - Add/remove from favorites\n' +
+      '☰ Lists - Manage lists\n' +
+      '👁 Hide - Temporarily hide item\n' +
+      '🗑 Delete - Delete item'
+  );
+}
+
 export default function ClosetScreen() {
+  const router = useRouter();
   const { items, loading, refresh } = useItems();
   const [q, setQ] = useState('');
   const [showHidden, setShowHidden] = useState(false);
@@ -48,15 +60,20 @@ export default function ClosetScreen() {
     <ThemedView style={styles.container}>
       <View style={styles.headerRow}>
         <ThemedText type="title">Closet</ThemedText>
-        <Link href="/add">
-          <Button title="Add" onPress={() => {}} />
-        </Link>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={showIconLegend} style={styles.helpBtn}>
+            <Ionicons name="help-circle-outline" size={24} color="#666" />
+          </TouchableOpacity>
+          <Button title="Add" onPress={() => router.push('/add')} />
+        </View>
       </View>
 
       <View style={styles.controls}>
         <TextInput placeholder="Search" style={styles.input} value={q} onChangeText={setQ} />
-        <Button title={showHidden ? 'Hide hidden' : 'Show hidden'} onPress={() => setShowHidden((s) => !s)} />
-        <Button title="Refresh" onPress={refresh} />
+        <View style={styles.controlsRow}>
+          <Button title={showHidden ? 'Hide hidden' : 'Show hidden'} onPress={() => setShowHidden((s) => !s)} />
+          <Button title="Refresh" onPress={refresh} />
+        </View>
       </View>
 
       {/* List filters */}
@@ -114,7 +131,10 @@ export default function ClosetScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, alignItems: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  helpBtn: { padding: 4 },
   controls: { padding: 12, gap: 8 },
+  controlsRow: { flexDirection: 'row', gap: 8 },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 8 },
   empty: { padding: 20, alignItems: 'center' },
   listFilters: {

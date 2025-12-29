@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Allow the app to use the camera to add photos of clothing items.",
         "NSPhotoLibraryUsageDescription": "Allow the app to access your photo library to choose images for clothing items.",
-        "NSPhotoLibraryAddUsageDescription": "Allow the app to save generated images to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "Allow the app to save generated images to your photo library.",
+        "NSLocationWhenInUseUsageDescription": "Allow the app to access your location to provide weather-based outfit recommendations."
       }
     },
     "android": {
@@ -29,7 +30,9 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {

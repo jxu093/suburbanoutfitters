@@ -1,14 +1,19 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { Alert, Button, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { LIST_TAGS, isListTag, getListDisplayName, createListTag } from '../constants';
 import { useItems } from '../hooks/use-items';
 import type { Item } from '../types';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
+import { useToast } from './toast';
 
 export default function ItemCard({ item }: { item: Item }) {
-  const { items, update, remove, markAsWorn } = useItems();
+  const { items, update, remove } = useItems();
+  const { showToast } = useToast();
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   // Get all unique list tags from all items
   const allListTags = Array.from(
@@ -17,36 +22,79 @@ export default function ItemCard({ item }: { item: Item }) {
     )
   );
 
-  // Check if item is in favorites
-  const isFavorite = item.tags?.includes(LIST_TAGS.FAVORITES) ?? false;
+  // Get the CURRENT item from the items array to ensure we have the latest state
+  // This fixes the bug where the icon doesn't update immediately after clicking
+  const currentItem = items.find((i) => i.id === item.id) ?? item;
+
+  // Check if item is in favorites (use currentItem for fresh state)
+  const isFavorite = currentItem.tags?.includes(LIST_TAGS.FAVORITES) ?? false;
 
   async function toggleHidden() {
     if (item.hidden) {
       await update(item.id!, { hidden: false, hiddenUntil: null });
+      showToast('Item unhidden');
       return;
     }
 
     Alert.alert('Hide item', 'For how long would you like to hide this item?', [
-      { text: '1 day', onPress: async () => await update(item.id!, { hidden: true, hiddenUntil: Date.now() + 24 * 60 * 60 * 1000 }) },
-      { text: '7 days', onPress: async () => await update(item.id!, { hidden: true, hiddenUntil: Date.now() + 7 * 24 * 60 * 60 * 1000 }) },
-      { text: 'Forever', onPress: async () => await update(item.id!, { hidden: true, hiddenUntil: null }) },
+      {
+        text: '1 day',
+        onPress: async () => {
+          await update(item.id!, { hidden: true, hiddenUntil: Date.now() + 24 * 60 * 60 * 1000 });
+          showToast('Hidden for 1 day');
+        },
+      },
+      {
+        text: '7 days',
+        onPress: async () => {
+          await update(item.id!, { hidden: true, hiddenUntil: Date.now() + 7 * 24 * 60 * 60 * 1000 });
+          showToast('Hidden for 7 days');
+        },
+      },
+      {
+        text: 'Forever',
+        onPress: async () => {
+          await update(item.id!, { hidden: true, hiddenUntil: null });
+          showToast('Item hidden');
+        },
+      },
       { text: 'Cancel', style: 'cancel' },
-    ]);
+    ], { cancelable: true });
   }
 
   function confirmDelete() {
     Alert.alert('Delete item', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => await remove(item.id!) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await remove(item.id!);
+          showToast('Item deleted');
+        },
+      },
     ]);
   }
 
   async function toggleFavorite() {
-    const currentTags = item.tags ?? [];
-    if (isFavorite) {
-      await update(item.id!, { tags: currentTags.filter((t) => t !== LIST_TAGS.FAVORITES) });
-    } else {
-      await update(item.id!, { tags: [...currentTags, LIST_TAGS.FAVORITES] });
+    // Prevent rapid clicking causing race conditions
+    if (isTogglingFavorite) return;
+
+    setIsTogglingFavorite(true);
+    try {
+      // Use currentItem to get fresh tags
+      const currentTags = currentItem.tags ?? [];
+      // Recalculate isFavorite fresh each time to avoid stale closure
+      const isFavoriteNow = currentTags.includes(LIST_TAGS.FAVORITES);
+      if (isFavoriteNow) {
+        await update(item.id!, { tags: currentTags.filter((t) => t !== LIST_TAGS.FAVORITES) });
+        showToast('Removed from favorites');
+      } else {
+        await update(item.id!, { tags: [...currentTags, LIST_TAGS.FAVORITES] });
+        showToast('Added to favorites');
+      }
+    } finally {
+      setIsTogglingFavorite(false);
     }
   }
 
@@ -54,12 +102,14 @@ export default function ItemCard({ item }: { item: Item }) {
     const currentTags = item.tags ?? [];
     if (!currentTags.includes(listTag)) {
       await update(item.id!, { tags: [...currentTags, listTag] });
+      showToast(`Added to ${getListDisplayName(listTag)}`);
     }
   }
 
   async function removeFromList(listTag: string) {
     const currentTags = item.tags ?? [];
     await update(item.id!, { tags: currentTags.filter((t) => t !== listTag) });
+    showToast(`Removed from ${getListDisplayName(listTag)}`);
   }
 
   function showListMenu() {
@@ -116,11 +166,18 @@ export default function ItemCard({ item }: { item: Item }) {
       {item.category ? <ThemedText type="subtitle">{item.category}</ThemedText> : null}
 
       <View style={styles.actions}>
-        <Button title={isFavorite ? '★' : '☆'} onPress={toggleFavorite} color={isFavorite ? '#f0ad4e' : 'gray'} />
-        <Button title="Lists" onPress={showListMenu} />
-        <Button title={item.hidden ? 'Unhide' : 'Hide'} onPress={toggleHidden} />
-        <Button title="Wear" onPress={() => markAsWorn(item.id!)} />
-        <Button title="Delete" color="#d9534f" onPress={confirmDelete} />
+        <TouchableOpacity onPress={toggleFavorite} style={styles.iconBtn}>
+          <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color={isFavorite ? '#f0ad4e' : '#666'} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={showListMenu} style={styles.iconBtn}>
+          <Ionicons name="list-outline" size={20} color="#666" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleHidden} style={styles.iconBtn}>
+          <Ionicons name={item.hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={confirmDelete} style={styles.iconBtn}>
+          <Ionicons name="trash-outline" size={20} color="#d9534f" />
+        </TouchableOpacity>
       </View>
     </ThemedView>
   );
@@ -144,9 +201,12 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     marginTop: 6,
-    width: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+  },
+  iconBtn: {
+    padding: 6,
+    borderRadius: 4,
   },
 });

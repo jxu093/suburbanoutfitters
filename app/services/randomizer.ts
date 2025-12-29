@@ -1,6 +1,6 @@
 import type { Item } from '../types';
 import { isItemHidden } from '../utils/item-helpers';
-import { type WeatherCondition } from '../constants';
+import { type WeatherCondition, normalizeCategory } from '../constants';
 
 export type { WeatherCondition };
 
@@ -108,15 +108,15 @@ export function pickRandomOutfit(items: Item[], opts: RandomizeOptions = {}): It
 
   const shuffled = shuffle(filterableItems);
   const chosen: Item[] = [];
-  const categories = new Set<string | undefined>();
+  const categories = new Set<string>();
   const target = Math.min(maxItems, Math.max(minItems, Math.floor(Math.random() * (maxItems - minItems + 1)) + minItems));
 
   for (const it of shuffled) {
     if (chosen.length >= target) break;
     if (avoidSameCategory) {
-      const cat = it.category ?? undefined;
-      if (cat && categories.has(cat)) continue;
-      if (cat) categories.add(cat);
+      const normalized = normalizeCategory(it.category);
+      if (normalized && categories.has(normalized)) continue;
+      if (normalized) categories.add(normalized);
       chosen.push(it);
     } else {
       chosen.push(it);
@@ -124,10 +124,19 @@ export function pickRandomOutfit(items: Item[], opts: RandomizeOptions = {}): It
   }
 
   // If we couldn't meet target due to category constraints or limited items, fill from remaining filterable items
+  // But still respect category uniqueness if avoidSameCategory is true
   if (chosen.length < target) {
     for (const it of filterableItems) {
       if (chosen.length >= target) break;
-      if (!chosen.includes(it)) chosen.push(it);
+      if (chosen.includes(it)) continue;
+
+      if (avoidSameCategory) {
+        const normalized = normalizeCategory(it.category);
+        if (normalized && categories.has(normalized)) continue;
+        if (normalized) categories.add(normalized);
+      }
+
+      chosen.push(it);
     }
   }
 

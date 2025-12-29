@@ -40,7 +40,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="outfits/index"
+        name="outfits/builder"
         options={{
           title: 'Outfits',
           tabBarIcon: ({ color, focused }) => (
@@ -48,18 +48,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Hide the old outfits list - accessed via builder */}
       <Tabs.Screen
-        name="outfits/random"
+        name="outfits/index"
         options={{
-          title: 'Random',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'shuffle' : 'shuffle-outline'} color={color} />
-          ),
+          href: null,
         }}
       />
-      {/* Hide these screens from tab bar - they're accessed via navigation */}
+      {/* Random screen is accessible via navigation from builder */}
       <Tabs.Screen
-        name="outfits/builder"
+        name="outfits/random"
         options={{
           href: null,
         }}

@@ -1,11 +1,13 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, View, Button, Alert } from 'react-native';
-import { Link } from 'expo-router';
-import OutfitPreview from './outfit-preview';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useOutfits } from '../hooks/use-outfits';
 import type { Item, Outfit } from '../types';
+import OutfitPreview from './outfit-preview';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { useOutfits } from '../hooks/use-outfits';
+import { useToast } from './toast';
 
 type OutfitCardProps = {
   outfit: Outfit;
@@ -13,7 +15,9 @@ type OutfitCardProps = {
 };
 
 export default function OutfitCard({ outfit, allItems }: OutfitCardProps) {
+  const router = useRouter();
   const { remove } = useOutfits();
+  const { showToast } = useToast();
 
   const outfitItems = useMemo(() => {
     return outfit.itemIds
@@ -24,7 +28,14 @@ export default function OutfitCard({ outfit, allItems }: OutfitCardProps) {
   function confirmDelete() {
     Alert.alert('Delete outfit', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => await remove(outfit.id!) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await remove(outfit.id!);
+          showToast('Outfit deleted');
+        },
+      },
     ]);
   }
 
@@ -34,10 +45,13 @@ export default function OutfitCard({ outfit, allItems }: OutfitCardProps) {
       <OutfitPreview items={outfitItems} />
 
       <View style={styles.actions}>
-        <Link href={`/outfits/${outfit.id}`}>
-          <Button title="Open" onPress={() => {}} />
-        </Link>
-        <Button title="Delete" color="#d9534f" onPress={confirmDelete} />
+        <TouchableOpacity onPress={() => router.push(`/outfits/${outfit.id}`)} style={styles.openBtn}>
+          <Ionicons name="open-outline" size={16} color="#007AFF" />
+          <ThemedText style={styles.openBtnText}>Open</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={confirmDelete} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={16} color="#d9534f" />
+        </TouchableOpacity>
       </View>
     </ThemedView>
   );
@@ -54,6 +68,20 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 8,
+  },
+  openBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: 8,
+  },
+  openBtnText: {
+    color: '#007AFF',
+    fontSize: 14,
+  },
+  deleteBtn: {
+    padding: 8,
   },
 });
