@@ -8,7 +8,7 @@ import { getCategoryDisplayName, normalizeCategory, type Category } from '../con
 import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 import { useItems } from '../hooks/use-items';
 import { useOutfits } from '../hooks/use-outfits';
-import { pickRandomOutfit, type RandomizeOptions, DEFAULT_OPTIONS, SMART_OPTIONS } from '../services/randomizer';
+import { pickRandomOutfit, type RandomizeOptions, DEFAULT_OPTIONS } from '../services/randomizer';
 import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '../services/weather';
 import type { Item, Outfit } from '../types';
 import { isItemHidden } from '../utils/item-helpers';
@@ -35,33 +35,32 @@ export default function OutfitBuilder() {
   const colors = Colors[colorScheme ?? 'light'];
 
   // Fetch weather data on mount
-  // DISABLED: Weather API key not active yet - uncomment when ready
-  // useEffect(() => {
-  //   async function fetchWeather() {
-  //     if (!isWeatherApiConfigured()) {
-  //       return;
-  //     }
+  useEffect(() => {
+    async function fetchWeather() {
+      if (!isWeatherApiConfigured()) {
+        return;
+      }
 
-  //     setWeatherLoading(true);
-  //     try {
-  //       const { status } = await Location.requestForegroundPermissionsAsync();
-  //       if (status !== 'granted') {
-  //         console.log('Location permission denied');
-  //         return;
-  //       }
+      setWeatherLoading(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permission denied');
+          return;
+        }
 
-  //       const location = await Location.getCurrentPositionAsync({});
-  //       const weatherData = await getCurrentWeather(location.coords.latitude, location.coords.longitude);
-  //       setWeather(weatherData);
-  //     } catch (error) {
-  //       console.error('Failed to fetch weather:', error);
-  //     } finally {
-  //       setWeatherLoading(false);
-  //     }
-  //   }
+        const location = await Location.getCurrentPositionAsync({});
+        const weatherData = await getCurrentWeather(location.coords.latitude, location.coords.longitude);
+        setWeather(weatherData);
+      } catch (error) {
+        console.error('Failed to fetch weather:', error);
+      } finally {
+        setWeatherLoading(false);
+      }
+    }
 
-  //   fetchWeather();
-  // }, []);
+    fetchWeather();
+  }, []);
 
   // Initialize from params if provided (preselected items from quick generate)
   useEffect(() => {
@@ -122,23 +121,20 @@ export default function OutfitBuilder() {
   }
 
   function randomize() {
-    const options: RandomizeOptions = {
-      ...randomizeOptions,
-      weatherCondition: randomizeOptions.useWeatherRules ? (weather?.condition ?? randomizeOptions.weatherCondition) : undefined,
-    };
-    const outfit = pickRandomOutfit(available, options);
-    setCurrent(outfit);
-    showToast('Outfit randomized');
-  }
+    // Fill all categories with random items
+    const CATEGORIES_LIST: Category[] = ['hat', 'top', 'bottom', 'shoes', 'outerwear', 'accessory'];
+    const newItems: Item[] = [];
 
-  function smartRandomize() {
-    const options: RandomizeOptions = {
-      ...SMART_OPTIONS,
-      weatherCondition: weather?.condition ?? 'mild',
-    };
-    const outfit = pickRandomOutfit(available, options);
-    setCurrent(outfit);
-    showToast('Smart outfit generated');
+    for (const category of CATEGORIES_LIST) {
+      const categoryItems = available.filter((item) => normalizeCategory(item.category) === category);
+      if (categoryItems.length > 0) {
+        const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
+        newItems.push(randomItem);
+      }
+    }
+
+    setCurrent(newItems);
+    showToast('Outfit randomized');
   }
 
   function handleOptionsApply(options: RandomizeOptions) {
@@ -207,77 +203,60 @@ export default function OutfitBuilder() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
+        {/* Header with inline weather */}
         <View style={styles.header}>
-          <ThemedText type="title">Build Outfit</ThemedText>
+          <View style={styles.headerLeft}>
+            <ThemedText type="title">Build Outfit</ThemedText>
+            {/* Compact weather display */}
+            {weatherLoading && (
+              <View style={styles.weatherInline}>
+                <ActivityIndicator size="small" color={colors.textSecondary} />
+              </View>
+            )}
+            {!weatherLoading && weather && (
+              <View style={styles.weatherInline}>
+                <Ionicons
+                  name={
+                    weather.condition === 'hot' || weather.condition === 'warm' ? 'sunny' :
+                    weather.condition === 'cold' || weather.condition === 'freezing' ? 'snow' :
+                    'partly-sunny'
+                  }
+                  size={16}
+                  color={
+                    weather.condition === 'hot' || weather.condition === 'warm' ? '#ff9800' :
+                    weather.condition === 'cold' || weather.condition === 'freezing' ? '#03a9f4' :
+                    '#ffc107'
+                  }
+                />
+                <ThemedText style={styles.weatherTemp}>{weather.temperature}°</ThemedText>
+                <ThemedText style={[styles.weatherCity, { color: colors.textSecondary }]}>{weather.city}</ThemedText>
+              </View>
+            )}
+          </View>
           <TouchableOpacity onPress={() => router.push('/outfits')} style={styles.savedBtn}>
             <Ionicons name="albums-outline" size={20} color={colors.tint} />
             <ThemedText style={[styles.savedBtnText, { color: colors.tint }]}>Saved</ThemedText>
           </TouchableOpacity>
         </View>
 
-        {/* Weather Display */}
-        {weatherLoading && (
-          <View style={[styles.weatherCard, { backgroundColor: colors.secondaryBackground, borderColor: colors.border }]}>
-            <ActivityIndicator size="small" color={colors.tint} />
-            <ThemedText style={styles.weatherLoadingText}>Loading weather...</ThemedText>
-          </View>
-        )}
-        {!weatherLoading && weather && (
-          <View style={[styles.weatherCard, { backgroundColor: colors.secondaryBackground, borderColor: colors.border }]}>
-            <View style={styles.weatherHeader}>
-              <Ionicons
-                name={
-                  weather.condition === 'hot' || weather.condition === 'warm' ? 'sunny' :
-                  weather.condition === 'cold' || weather.condition === 'freezing' ? 'snow' :
-                  'partly-sunny'
-                }
-                size={28}
-                color={
-                  weather.condition === 'hot' || weather.condition === 'warm' ? '#ff9800' :
-                  weather.condition === 'cold' || weather.condition === 'freezing' ? '#03a9f4' :
-                  '#ffc107'
-                }
-              />
-              <View style={styles.weatherInfo}>
-                <ThemedText style={styles.weatherTemp}>{weather.temperature}°C</ThemedText>
-                <ThemedText style={[styles.weatherDesc, { color: colors.textSecondary }]}>
-                  {weather.description}
-                </ThemedText>
-              </View>
-            </View>
-            <ThemedText style={[styles.weatherCity, { color: colors.textSecondary }]}>
-              <Ionicons name="location-outline" size={12} /> {weather.city}
-            </ThemedText>
-          </View>
-        )}
-
-        {/* Action buttons */}
+        {/* Action buttons - all in one row */}
         <View style={styles.buttonRow}>
           <TouchableOpacity onPress={randomize} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="shuffle-outline" size={16} color={colors.tint} />
             <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Randomize</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowOptionsModal(true)} style={[styles.optionsBtn, { borderColor: colors.border }]}>
-            <Ionicons name="options-outline" size={16} color={colors.tint} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={smartRandomize} style={[styles.actionBtn, styles.smartBtn, { borderColor: colors.tint }]}>
-            <Ionicons name="sparkles" size={16} color={colors.tint} />
-            <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Smart</ThemedText>
+          <TouchableOpacity onPress={() => setShowOptionsModal(true)} style={[styles.iconBtn, { borderColor: colors.border }]}>
+            <Ionicons name="options-outline" size={18} color={colors.tint} />
           </TouchableOpacity>
           <TouchableOpacity onPress={fillRemaining} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="add-outline" size={16} color={colors.tint} />
             <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Fill</ThemedText>
           </TouchableOpacity>
-        </View>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity onPress={() => setShowFullScreen(true)} style={[styles.actionBtn, { borderColor: colors.border }]}>
-            <Ionicons name="expand-outline" size={16} color={colors.tint} />
-            <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Preview</ThemedText>
+          <TouchableOpacity onPress={() => setShowFullScreen(true)} style={[styles.iconBtn, { borderColor: colors.border }]}>
+            <Ionicons name="expand-outline" size={18} color={colors.tint} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={clearOutfit} style={[styles.actionBtn, { borderColor: colors.border }]}>
-            <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
-            <ThemedText style={[styles.actionBtnText, { color: colors.textSecondary }]}>Clear</ThemedText>
+          <TouchableOpacity onPress={clearOutfit} style={[styles.iconBtn, { borderColor: colors.border }]}>
+            <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -401,22 +380,70 @@ export default function OutfitBuilder() {
 
 function FullScreenPreview({ items }: { items: Item[] }) {
   const slots = categorizeItems(items);
-  const CATEGORIES_ORDER: Category[] = ['hat', 'outerwear', 'top', 'bottom', 'shoes', 'accessory'];
 
-  // Filter to only show populated categories
+  const hasOuterwear = slots.outerwear.length > 0;
+  const hasAccessory = slots.accessory.length > 0;
+  const hasSideItems = hasOuterwear || hasAccessory;
+
+  // Helper to render an item image
+  const renderItem = (item: Item) => (
+    <Image
+      key={item.id}
+      source={{ uri: item.thumbUri ?? item.imageUri ?? undefined }}
+      style={styles.previewThumb}
+    />
+  );
+
+  // If we have outerwear or accessories, use two-column layout
+  if (hasSideItems) {
+    return (
+      <View style={styles.previewLayout}>
+        {/* Hat - spans full width if present */}
+        {slots.hat.length > 0 && (
+          <View style={styles.previewCategoryRow}>
+            {slots.hat.map(renderItem)}
+          </View>
+        )}
+
+        {/* Top row: Top + Outerwear */}
+        <View style={styles.previewTwoColumn}>
+          <View style={styles.previewColumnLeft}>
+            {slots.top.map(renderItem)}
+          </View>
+          <View style={styles.previewColumnRight}>
+            {slots.outerwear.map(renderItem)}
+          </View>
+        </View>
+
+        {/* Bottom row: Bottom + Accessory */}
+        <View style={styles.previewTwoColumn}>
+          <View style={styles.previewColumnLeft}>
+            {slots.bottom.map(renderItem)}
+          </View>
+          <View style={styles.previewColumnRight}>
+            {slots.accessory.map(renderItem)}
+          </View>
+        </View>
+
+        {/* Shoes - spans full width if present */}
+        {slots.shoes.length > 0 && (
+          <View style={styles.previewCategoryRow}>
+            {slots.shoes.map(renderItem)}
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // Simple single-column layout for basic outfits
+  const CATEGORIES_ORDER: Category[] = ['hat', 'top', 'bottom', 'shoes'];
   const populatedSlots = CATEGORIES_ORDER.filter((cat) => slots[cat].length > 0);
 
   return (
     <View style={styles.previewLayout}>
       {populatedSlots.map((category) => (
         <View key={category} style={styles.previewCategoryRow}>
-          {slots[category].map((item) => (
-            <Image
-              key={item.id}
-              source={{ uri: item.thumbUri ?? item.imageUri ?? undefined }}
-              style={styles.previewThumb}
-            />
-          ))}
+          {slots[category].map(renderItem)}
         </View>
       ))}
     </View>
@@ -465,35 +492,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: Spacing.md, gap: Spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerLeft: { gap: Spacing.xs },
   savedBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, padding: Spacing.sm },
   savedBtnText: { fontSize: 13, fontWeight: '600' },
-  weatherCard: {
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    gap: Spacing.sm,
-    ...Shadows.card,
-  },
-  weatherLoadingText: { fontSize: 12, textAlign: 'center' },
-  weatherHeader: {
+  weatherInline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-  },
-  weatherInfo: {
-    flex: 1,
+    gap: Spacing.xs,
   },
   weatherTemp: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  weatherDesc: {
-    fontSize: 12,
-    textTransform: 'capitalize',
+    fontSize: 13,
+    fontWeight: '600',
   },
   weatherCity: {
-    fontSize: 11,
-    textAlign: 'right',
+    fontSize: 12,
   },
   buttonRow: { flexDirection: 'row', gap: Spacing.xs },
   actionBtn: {
@@ -507,16 +519,13 @@ const styles = StyleSheet.create({
     borderRadius: Radii.sm,
     borderWidth: 1,
   },
-  optionsBtn: {
+  iconBtn: {
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderRadius: Radii.sm,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  smartBtn: {
-    borderWidth: 2,
   },
   actionBtnText: { fontSize: 11, fontWeight: '600' },
   silhouetteContainer: { gap: Spacing.lg, paddingVertical: Spacing.md },
@@ -587,5 +596,17 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: Radii.md,
+  },
+  previewTwoColumn: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewColumnLeft: {
+    alignItems: 'center',
+  },
+  previewColumnRight: {
+    alignItems: 'center',
   },
 });
