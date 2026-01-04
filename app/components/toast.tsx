@@ -1,5 +1,7 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -66,20 +68,41 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 function ToastItem({ message, type }: { message: string; type: ToastType }) {
   const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(2500),
-      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, tension: 100, friction: 10, useNativeDriver: true }),
     ]).start();
-  }, [opacity]);
+
+    const hideTimer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: -10, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }, 2500);
+
+    return () => clearTimeout(hideTimer);
+  }, [opacity, translateY]);
 
   const backgroundColor =
-    type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3';
+    type === 'success' ? colors.success : type === 'error' ? colors.error : colors.tint;
+
+  const iconName: keyof typeof Ionicons.glyphMap =
+    type === 'success' ? 'checkmark-circle' : type === 'error' ? 'alert-circle' : 'information-circle';
 
   return (
-    <Animated.View style={[styles.toast, { opacity, backgroundColor }]}>
+    <Animated.View
+      style={[
+        styles.toast,
+        Shadows.modal,
+        { opacity, backgroundColor, transform: [{ translateY }] },
+      ]}
+    >
+      <Ionicons name={iconName} size={18} color="#fff" />
       <Text style={styles.text}>{message}</Text>
     </Animated.View>
   );
@@ -92,17 +115,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   toast: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    maxWidth: '80%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.pill,
+    maxWidth: '85%',
   },
   text: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -1,17 +1,22 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, Button, Image as RNImage, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
+import { Colors, Radii, Spacing } from '../constants/theme';
 import { SavedImage, pickAndSaveFromLibrary, requestPermissions, takeAndSavePhoto } from '../services/image-service';
+import { ThemedButton } from './themed-button';
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 
 export type ImagePickerProps = {
   onDone?: (saved: SavedImage) => void;
+  showPreview?: boolean;
+  previewUri?: string;
+  onReset?: () => void;
 };
 
-export default function ImagePickerComponent({ onDone }: ImagePickerProps) {
+export default function ImagePickerComponent({ onDone, showPreview, previewUri, onReset }: ImagePickerProps) {
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState<SavedImage | null>(null);
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   async function pick() {
     setLoading(true);
@@ -25,7 +30,6 @@ export default function ImagePickerComponent({ onDone }: ImagePickerProps) {
 
       const result = await pickAndSaveFromLibrary();
       if (result) {
-        setSaved(result);
         onDone?.(result);
       }
     } catch (e) {
@@ -48,7 +52,6 @@ export default function ImagePickerComponent({ onDone }: ImagePickerProps) {
 
       const result = await takeAndSavePhoto();
       if (result) {
-        setSaved(result);
         onDone?.(result);
       }
     } catch (e) {
@@ -60,52 +63,85 @@ export default function ImagePickerComponent({ onDone }: ImagePickerProps) {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.secondaryBackground, borderColor: colors.separator }]}>
       <View style={styles.row}>
-        <Button title="Choose from library" onPress={pick} />
-        <Button title="Take photo" onPress={take} />
+        <View style={styles.buttonWrapper}>
+          <ThemedButton
+            title="Choose from library"
+            variant="secondary"
+            size="small"
+            icon="images-outline"
+            onPress={pick}
+            disabled={loading}
+          />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <ThemedButton
+            title="Take photo"
+            variant="secondary"
+            size="small"
+            icon="camera-outline"
+            onPress={take}
+            disabled={loading}
+          />
+        </View>
       </View>
 
-      {loading ? <ActivityIndicator style={{ marginTop: 12 }} /> : null}
+      {loading ? <ActivityIndicator style={styles.loader} color={colors.tint} /> : null}
 
-      {saved ? (
+      {showPreview && previewUri ? (
         <View style={styles.preview}>
-          <ThemedText type="subtitle">Saved image</ThemedText>
-          <Image source={{ uri: saved.uri }} style={styles.image} />
-          <ThemedText>Thumbnail</ThemedText>
-          <RNImage source={{ uri: saved.thumbnailUri }} style={styles.thumb} />
+          <View style={styles.previewHeader}>
+            <ThemedText type="headline">Image preview</ThemedText>
+            {onReset && (
+              <ThemedButton
+                title="Reset"
+                variant="destructive"
+                size="small"
+                onPress={onReset}
+              />
+            )}
+          </View>
+          <Image source={{ uri: previewUri }} style={styles.thumb} />
         </View>
       ) : null}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
-    padding: 16,
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
+    borderWidth: 1,
   },
   row: {
     flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  buttonWrapper: {
+    flex: 1,
+  },
+  loader: {
+    marginTop: Spacing.md,
   },
   preview: {
-    marginTop: 12,
+    marginTop: Spacing.md,
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
-  image: {
-    width: 300,
-    height: 200,
-    resizeMode: 'cover',
-    borderRadius: 8,
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   thumb: {
     width: 120,
     height: 90,
     resizeMode: 'cover',
-    borderRadius: 6,
-    marginTop: 6,
+    borderRadius: Radii.sm,
+    marginTop: Spacing.xs,
   },
 });

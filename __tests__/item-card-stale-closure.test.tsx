@@ -46,19 +46,6 @@ jest.mock('../app/components/toast', () => ({
   }),
 }));
 
-jest.mock('../app/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#000',
-      background: '#fff',
-      border: '#ddd',
-      success: '#4CAF50',
-      error: '#f44336',
-      textSecondary: '#666',
-    },
-  },
-}));
-
 jest.mock('../app/components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
@@ -92,12 +79,10 @@ describe('ItemCard stale closure bug', () => {
       hidden: false,
     };
 
-    const { rerender } = render(<ItemCard item={currentItem} />);
+    const { rerender, getByTestId } = render(<ItemCard item={currentItem} />);
 
     // Get the favorite button
-    const rendered = render(<ItemCard item={currentItem} />);
-    const touchables = rendered.root.findAllByType(require('react-native').TouchableOpacity);
-    const favoriteButton = touchables[1]; // Second button (first is Link)
+    const favoriteButton = getByTestId('favorite-button');
 
     // First click - should ADD to favorites
     fireEvent.press(favoriteButton);
@@ -123,9 +108,8 @@ describe('ItemCard stale closure bug', () => {
 
     // Second click - should REMOVE from favorites
     // But due to stale closure bug, it might try to ADD again
-    const rendered2 = render(<ItemCard item={currentItem} />);
-    const touchables2 = rendered2.root.findAllByType(require('react-native').TouchableOpacity);
-    const favoriteButton2 = touchables2[1];
+    const { getByTestId: getByTestId2 } = render(<ItemCard item={currentItem} />);
+    const favoriteButton2 = getByTestId2('favorite-button');
 
     fireEvent.press(favoriteButton2);
 

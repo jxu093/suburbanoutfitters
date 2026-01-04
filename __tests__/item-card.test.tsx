@@ -28,21 +28,6 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   return (props: any) => <View testID={`icon-${props.name}`} {...props} />;
 });
 
-jest.mock('../app/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#000',
-      background: '#fff',
-      tint: '#0a7ea4',
-      icon: '#000',
-      border: '#ddd',
-      success: '#4CAF50',
-      error: '#f44336',
-      textSecondary: '#666',
-    },
-  },
-}));
-
 jest.mock('../app/components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');

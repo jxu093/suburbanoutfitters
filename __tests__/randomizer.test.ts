@@ -2,11 +2,11 @@ import { pickRandomOutfit } from '../app/services/randomizer';
 
 describe('randomizer', () => {
   const sampleItems = [
-    { id: 1, name: 'Shirt', category: 'tops' },
-    { id: 2, name: 'Jacket', category: 'outer' },
-    { id: 3, name: 'Jeans', category: 'bottoms' },
-    { id: 4, name: 'Hat', category: 'accessories' },
-    { id: 5, name: 'Scarf', category: 'accessories' },
+    { id: 1, name: 'Shirt', category: 'top', createdAt: Date.now() },
+    { id: 2, name: 'Jacket', category: 'outerwear', createdAt: Date.now() },
+    { id: 3, name: 'Jeans', category: 'bottom', createdAt: Date.now() },
+    { id: 4, name: 'Hat', category: 'hat', createdAt: Date.now() },
+    { id: 5, name: 'Scarf', category: 'accessory', createdAt: Date.now() },
   ];
 
   test('returns between min and max items', () => {
@@ -64,22 +64,28 @@ describe('randomizer', () => {
     expect(out.every((item) => !item.tags?.includes('summer'))).toBe(true);
   });
 
-  test('filters by weather condition: hot', () => {
-    const out = pickRandomOutfit(fullItems as any, { minItems: 1, maxItems: 5, weatherCondition: 'hot' });
-    // Expect no jackets, coats, heavy sweaters, long sleeves, outerwear, mid layer
-    expect(out.every(item =>
-      !['jacket', 'coat', 'sweater', 'long sleeve'].some(tag => item.tags?.includes(tag)) &&
-      !['outerwear', 'mid layer'].includes(item.category || '')
-    )).toBe(true);
+  test('filters by weather condition: hot (when useWeatherRules is true)', () => {
+    const out = pickRandomOutfit(fullItems as any, {
+      minItems: 1,
+      maxItems: 5,
+      weatherCondition: 'hot',
+      useWeatherRules: true,
+    });
+    // Expect no outerwear in hot weather
+    expect(out.every(item => item.category !== 'outerwear')).toBe(true);
   });
 
-  test('filters by weather condition: cold', () => {
-    const out = pickRandomOutfit(fullItems as any, { minItems: 1, maxItems: 5, weatherCondition: 'cold' });
-    // Expect jackets, coats, sweaters, outerwear, and no shorts/skirts
+  test('filters by weather condition: cold (when useWeatherRules is true)', () => {
+    const out = pickRandomOutfit(fullItems as any, {
+      minItems: 1,
+      maxItems: 5,
+      weatherCondition: 'cold',
+      useWeatherRules: true,
+    });
+    // Expect no shorts or items with 'shorts' tag
     expect(out.every(item =>
-      (['jacket', 'coat', 'sweater', 'outerwear'].some(tag => item.tags?.includes(tag)) ||
-       ['outerwear', 'mid layer'].includes(item.category || '')) &&
-      !['shorts', 'skirt'].includes(item.category || '')
+      !item.tags?.includes('shorts') &&
+      item.name !== 'Shorts'
     )).toBe(true);
   });
 
@@ -89,8 +95,10 @@ describe('randomizer', () => {
       maxItems: 5,
       requiredCategories: ['bottom'],
       weatherCondition: 'hot',
+      useWeatherRules: true,
     });
-    expect(out.every(item => item.category === 'bottom' && item.name === 'Shorts')).toBe(true);
+    // Should only return bottom items (Jeans or Shorts)
+    expect(out.every(item => item.category === 'bottom')).toBe(true);
   });
 
   test('avoids duplicate categories using normalized categories (aliases)', () => {

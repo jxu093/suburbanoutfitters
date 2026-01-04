@@ -2,18 +2,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { LIST_TAGS, isListTag, getListDisplayName, createListTag } from '../constants';
+import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 import { useItems } from '../hooks/use-items';
 import type { Item } from '../types';
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 import { useToast } from './toast';
 
 export default function ItemCard({ item }: { item: Item }) {
   const { items, update, remove } = useItems();
   const { showToast } = useToast();
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   // Get all unique list tags from all items
   const allListTags = Array.from(
@@ -158,55 +160,70 @@ export default function ItemCard({ item }: { item: Item }) {
   }
 
   return (
-    <ThemedView style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.separator }, Shadows.card]}>
       <Link href={`/item/${item.id}`}>
         <Image source={{ uri: item.thumbUri ?? item.imageUri ?? undefined }} style={styles.image} />
       </Link>
-      <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-      {item.category ? <ThemedText type="subtitle">{item.category}</ThemedText> : null}
+      <ThemedText type="headline" numberOfLines={1} style={styles.name}>{item.name}</ThemedText>
+      {item.category ? <ThemedText type="secondary" numberOfLines={1}>{item.category}</ThemedText> : null}
 
       <View style={styles.actions}>
-        <TouchableOpacity onPress={toggleFavorite} style={styles.iconBtn}>
-          <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color={isFavorite ? '#f0ad4e' : '#666'} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={showListMenu} style={styles.iconBtn}>
-          <Ionicons name="list-outline" size={20} color="#666" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleHidden} style={styles.iconBtn}>
-          <Ionicons name={item.hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={confirmDelete} style={styles.iconBtn}>
-          <Ionicons name="trash-outline" size={20} color="#d9534f" />
-        </TouchableOpacity>
+        <Pressable
+          testID="favorite-button"
+          onPress={toggleFavorite}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color={isFavorite ? colors.star : colors.icon} />
+        </Pressable>
+        <Pressable
+          onPress={showListMenu}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name="list-outline" size={20} color={colors.icon} />
+        </Pressable>
+        <Pressable
+          onPress={toggleHidden}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name={item.hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.icon} />
+        </Pressable>
+        <Pressable
+          onPress={confirmDelete}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.destructive} />
+        </Pressable>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    padding: 8,
-    borderRadius: 8,
+    padding: Spacing.md,
+    borderRadius: Radii.card,
     borderWidth: 1,
-    borderColor: '#eee',
-    gap: 6,
+    gap: Spacing.xs,
     alignItems: 'center',
   },
   image: {
     width: 160,
     height: 120,
-    borderRadius: 8,
+    borderRadius: Radii.sm,
     resizeMode: 'cover',
+  },
+  name: {
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 6,
+    gap: Spacing.xxs,
+    marginTop: Spacing.xs,
     justifyContent: 'center',
   },
   iconBtn: {
-    padding: 6,
-    borderRadius: 4,
+    padding: Spacing.sm,
+    borderRadius: Radii.sm,
   },
 });

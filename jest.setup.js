@@ -46,7 +46,7 @@ jest.mock('react-native', () => {
     },
     Platform: {
       OS: 'ios',
-      select: (obj) => obj?.default ?? obj?.ios ?? obj?.android ?? obj,
+      select: (obj) => obj?.ios ?? obj?.android ?? obj?.default ?? obj,
     },
     Dimensions: {
       get: () => ({ width: 375, height: 812 }),
@@ -174,3 +174,5 @@ jest.mock('expo-sqlite', () => ({
     execAsync: jest.fn().mockResolvedValue(undefined),
   })),
 }));
+
+// Theme mock is in __mocks__/theme.js and configured via jest.config.js moduleNameMapper

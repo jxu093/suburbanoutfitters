@@ -44,19 +44,6 @@ jest.mock('../app/components/toast', () => ({
   }),
 }));
 
-jest.mock('../app/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#000',
-      background: '#fff',
-      border: '#ddd',
-      success: '#4CAF50',
-      error: '#f44336',
-      textSecondary: '#666',
-    },
-  },
-}));
-
 jest.mock('../app/components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
@@ -93,13 +80,8 @@ describe('ItemCard favorite button integration', () => {
     // Verify initial state
     expect(getByTestId('icon-star-outline')).toBeDefined();
 
-    // Find all TouchableOpacity elements
-    const { getAllByType } = require('@testing-library/react-native');
-    const rendered = render(<ItemCard item={item} />);
-    const touchables = rendered.root.findAllByType(require('react-native').TouchableOpacity);
-
-    // The first button should be the favorite button (based on item-card.tsx line 152)
-    const favoriteButton = touchables[1]; // Index 1 because 0 is the Link wrapper
+    // Get favorite button by testID
+    const favoriteButton = getByTestId('favorite-button');
 
     // Click the favorite button
     fireEvent.press(favoriteButton);
@@ -128,15 +110,13 @@ describe('ItemCard favorite button integration', () => {
       hidden: false,
     };
 
-    const rendered = render(<ItemCard item={item} />);
-    const { getByTestId } = rendered;
+    const { getByTestId } = render(<ItemCard item={item} />);
 
     // Verify initial state
     expect(getByTestId('icon-star')).toBeDefined();
 
-    // Find the favorite button
-    const touchables = rendered.root.findAllByType(require('react-native').TouchableOpacity);
-    const favoriteButton = touchables[1];
+    // Get favorite button by testID
+    const favoriteButton = getByTestId('favorite-button');
 
     // Click to unfavorite
     fireEvent.press(favoriteButton);

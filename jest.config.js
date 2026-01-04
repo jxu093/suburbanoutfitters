@@ -27,4 +27,7 @@ module.exports = {
   // Only match files with .test.ts or .test.tsx extension
   testMatch: ['<rootDir>/__tests__/**/*.test.{ts,tsx}'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleNameMapper: {
+    '^.+/constants/theme$': '<rootDir>/__mocks__/theme.js',
+  },
 };

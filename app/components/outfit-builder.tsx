@@ -5,14 +5,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { getCategoryDisplayName, normalizeCategory, type Category } from '../constants';
-import { Colors } from '../constants/theme';
+import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 import { useItems } from '../hooks/use-items';
 import { useOutfits } from '../hooks/use-outfits';
-import { pickRandomOutfit } from '../services/randomizer';
+import { pickRandomOutfit, type RandomizeOptions, DEFAULT_OPTIONS, SMART_OPTIONS } from '../services/randomizer';
 import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '../services/weather';
 import type { Item, Outfit } from '../types';
 import { isItemHidden } from '../utils/item-helpers';
 import { categorizeItems } from '../utils/outfit-categorization';
+import RandomizerOptionsModal from './randomizer-options-modal';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { useToast } from './toast';
@@ -26,6 +27,8 @@ export default function OutfitBuilder() {
   const [current, setCurrent] = useState<Item[]>([]);
   const [selectingCategory, setSelectingCategory] = useState<Category | null>(null);
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [randomizeOptions, setRandomizeOptions] = useState<RandomizeOptions>(DEFAULT_OPTIONS);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const colorScheme = useColorScheme();
@@ -119,9 +122,34 @@ export default function OutfitBuilder() {
   }
 
   function randomize() {
-    const outfit = pickRandomOutfit(available, { minItems: 4, maxItems: 6, avoidSameCategory: true });
+    const options: RandomizeOptions = {
+      ...randomizeOptions,
+      weatherCondition: randomizeOptions.useWeatherRules ? (weather?.condition ?? randomizeOptions.weatherCondition) : undefined,
+    };
+    const outfit = pickRandomOutfit(available, options);
     setCurrent(outfit);
     showToast('Outfit randomized');
+  }
+
+  function smartRandomize() {
+    const options: RandomizeOptions = {
+      ...SMART_OPTIONS,
+      weatherCondition: weather?.condition ?? 'mild',
+    };
+    const outfit = pickRandomOutfit(available, options);
+    setCurrent(outfit);
+    showToast('Smart outfit generated');
+  }
+
+  function handleOptionsApply(options: RandomizeOptions) {
+    setRandomizeOptions(options);
+    // Immediately generate with new options
+    const outfit = pickRandomOutfit(available, {
+      ...options,
+      weatherCondition: options.useWeatherRules ? (weather?.condition ?? options.weatherCondition) : undefined,
+    });
+    setCurrent(outfit);
+    showToast('Generated with new options');
   }
 
   function fillRemaining() {
@@ -230,10 +258,19 @@ export default function OutfitBuilder() {
             <Ionicons name="shuffle-outline" size={16} color={colors.tint} />
             <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Randomize</ThemedText>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowOptionsModal(true)} style={[styles.optionsBtn, { borderColor: colors.border }]}>
+            <Ionicons name="options-outline" size={16} color={colors.tint} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={smartRandomize} style={[styles.actionBtn, styles.smartBtn, { borderColor: colors.tint }]}>
+            <Ionicons name="sparkles" size={16} color={colors.tint} />
+            <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Smart</ThemedText>
+          </TouchableOpacity>
           <TouchableOpacity onPress={fillRemaining} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="add-outline" size={16} color={colors.tint} />
             <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Fill</ThemedText>
           </TouchableOpacity>
+        </View>
+        <View style={styles.buttonRow}>
           <TouchableOpacity onPress={() => setShowFullScreen(true)} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="expand-outline" size={16} color={colors.tint} />
             <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Preview</ThemedText>
@@ -349,6 +386,15 @@ export default function OutfitBuilder() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Randomizer options modal */}
+      <RandomizerOptionsModal
+        visible={showOptionsModal}
+        onClose={() => setShowOptionsModal(false)}
+        onApply={handleOptionsApply}
+        initialOptions={randomizeOptions}
+        weatherCondition={weather?.condition}
+      />
     </ThemedView>
   );
 }
@@ -417,21 +463,22 @@ function CategorySlot({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 12, gap: 10 },
+  scrollContent: { padding: Spacing.md, gap: Spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  savedBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 },
+  savedBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, padding: Spacing.sm },
   savedBtnText: { fontSize: 13, fontWeight: '600' },
   weatherCard: {
-    padding: 12,
-    borderRadius: 8,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
     borderWidth: 1,
-    gap: 8,
+    gap: Spacing.sm,
+    ...Shadows.card,
   },
   weatherLoadingText: { fontSize: 12, textAlign: 'center' },
   weatherHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
   },
   weatherInfo: {
     flex: 1,
@@ -448,35 +495,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'right',
   },
-  buttonRow: { flexDirection: 'row', gap: 4 },
+  buttonRow: { flexDirection: 'row', gap: Spacing.xs },
   actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 6,
+    gap: Spacing.xxs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: Radii.sm,
     borderWidth: 1,
   },
+  optionsBtn: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smartBtn: {
+    borderWidth: 2,
+  },
   actionBtnText: { fontSize: 11, fontWeight: '600' },
-  silhouetteContainer: { gap: 14, paddingVertical: 12 },
-  mainRow: { flexDirection: 'row', gap: 20, justifyContent: 'center' },
-  leftColumn: { gap: 14, alignItems: 'center' },
-  rightColumn: { gap: 14, alignItems: 'center', justifyContent: 'center' },
-  middleRow: { flexDirection: 'row', gap: 12, justifyContent: 'center' },
-  categorySlot: { alignItems: 'center', gap: 8 },
+  silhouetteContainer: { gap: Spacing.lg, paddingVertical: Spacing.md },
+  mainRow: { flexDirection: 'row', gap: Spacing.xl, justifyContent: 'center' },
+  leftColumn: { gap: Spacing.lg, alignItems: 'center' },
+  rightColumn: { gap: Spacing.lg, alignItems: 'center', justifyContent: 'center' },
+  middleRow: { flexDirection: 'row', gap: Spacing.md, justifyContent: 'center' },
+  categorySlot: { alignItems: 'center', gap: Spacing.sm },
   categoryLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase' },
-  slotContent: { flexDirection: 'row', gap: 8 },
+  slotContent: { flexDirection: 'row', gap: Spacing.sm },
   slotItemWrap: { position: 'relative' },
-  slotItem: { borderRadius: 10, overflow: 'hidden', borderWidth: 2 },
-  slotThumb: { width: 90, height: 90, borderRadius: 8 },
-  removeBtn: { position: 'absolute', top: -8, right: -8, backgroundColor: '#fff', borderRadius: 12 },
+  slotItem: { borderRadius: Radii.md, overflow: 'hidden', borderWidth: 2 },
+  slotThumb: { width: 90, height: 90, borderRadius: Radii.sm },
+  removeBtn: { position: 'absolute', top: -8, right: -8, backgroundColor: '#fff', borderRadius: Radii.md },
   emptySlot: {
     width: 90,
     height: 90,
-    borderRadius: 10,
+    borderRadius: Radii.md,
     borderWidth: 2,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -486,25 +544,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginTop: 6,
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.button,
+    marginTop: Spacing.sm,
+    ...Shadows.button,
   },
   saveBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  modalContainer: { flex: 1, padding: 16 },
+  modalContainer: { flex: 1, padding: Spacing.lg },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
-  closeBtn: { padding: 4 },
-  itemGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingBottom: 32 },
-  gridItem: { width: '30%', alignItems: 'center', gap: 4 },
-  gridThumb: { width: '100%', aspectRatio: 1, borderRadius: 8 },
+  closeBtn: { padding: Spacing.xs },
+  itemGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, paddingBottom: Spacing.xxxl },
+  gridItem: { width: '30%', alignItems: 'center', gap: Spacing.xs },
+  gridThumb: { width: '100%', aspectRatio: 1, borderRadius: Radii.sm },
   gridItemName: { fontSize: 11, textAlign: 'center' },
-  emptyText: { color: '#999', textAlign: 'center', padding: 32 },
+  emptyText: { textAlign: 'center', padding: Spacing.xxxl },
   fullScreenContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -516,17 +575,17 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   previewLayout: {
-    gap: 20,
+    gap: Spacing.xl,
     alignItems: 'center',
   },
   previewCategoryRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.md,
     justifyContent: 'center',
   },
   previewThumb: {
     width: 150,
     height: 150,
-    borderRadius: 12,
+    borderRadius: Radii.md,
   },
 });

@@ -1,7 +1,14 @@
+import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useItems } from '../app/hooks/use-items';
+import { ItemsProvider } from '../app/contexts/items-context';
 import * as storage from '../app/services/storage';
 import type { Item } from '../app/types';
+
+// Wrapper to provide ItemsContext
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <ItemsProvider>{children}</ItemsProvider>
+);
 
 // Mock expo-file-system
 jest.mock('expo-file-system', () => ({
@@ -91,7 +98,7 @@ describe('useItems hook', () => {
   });
 
   test('initializes DB and loads items on mount', async () => {
-    const { result } = renderHook(() => useItems());
+    const { result } = renderHook(() => useItems(), { wrapper });
 
     expect(result.current.loading).toBe(true);
 
@@ -110,7 +117,7 @@ describe('useItems hook', () => {
   });
 
   test('markAsWorn hides an item for 7 days and updates wornAt', async () => {
-    const { result } = renderHook(() => useItems());
+    const { result } = renderHook(() => useItems(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -139,7 +146,7 @@ describe('useItems hook', () => {
   });
 
   test('add function adds a new item and refreshes the list', async () => {
-    const { result } = renderHook(() => useItems());
+    const { result } = renderHook(() => useItems(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);

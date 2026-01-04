@@ -51,19 +51,6 @@ jest.mock('../app/components/toast', () => ({
   }),
 }));
 
-jest.mock('../app/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#000',
-      background: '#fff',
-      border: '#ddd',
-      success: '#4CAF50',
-      error: '#f44336',
-      textSecondary: '#666',
-    },
-  },
-}));
-
 jest.mock('../app/components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
@@ -100,9 +87,8 @@ describe('ItemCard rapid clicking race condition', () => {
     // Initialize items array
     mockItemsArray = [item];
 
-    const rendered = render(<ItemCard item={item} />);
-    const touchables = rendered.root.findAllByType(require('react-native').TouchableOpacity);
-    const favoriteButton = touchables[1];
+    const { getByTestId } = render(<ItemCard item={item} />);
+    const favoriteButton = getByTestId('favorite-button');
 
     // Simulate rapid clicking
     console.log('=== Rapid clicking (3 times) ===');

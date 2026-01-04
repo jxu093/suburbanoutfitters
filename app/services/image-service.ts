@@ -122,6 +122,33 @@ export async function takeAndSavePhoto(): Promise<SavedImage | null> {
 }
 
 /**
+ * Downloads an image from a URL and saves it to the app's storage
+ */
+export async function downloadAndSaveFromUrl(url: string): Promise<SavedImage> {
+  await ensureDirectories();
+
+  const imagesDir = getImagesDir();
+
+  try {
+    // Download the image using the static File.downloadFileAsync method
+    const tempFile = await File.downloadFileAsync(url, imagesDir);
+
+    // Process and save using existing logic
+    const savedImage = await processAndSaveImageAsync(tempFile.uri);
+
+    // Clean up temp file
+    if (tempFile.exists) {
+      tempFile.delete();
+    }
+
+    return savedImage;
+  } catch (error) {
+    // No temp file to clean up since download failed
+    throw error;
+  }
+}
+
+/**
  * Delete image files from the filesystem.
  * Safe to call with null/undefined values.
  */

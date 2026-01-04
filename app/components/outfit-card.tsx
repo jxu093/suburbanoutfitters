@@ -1,12 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 import { useOutfits } from '../hooks/use-outfits';
 import type { Item, Outfit } from '../types';
 import OutfitPreview from './outfit-preview';
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 import { useToast } from './toast';
 
 type OutfitCardProps = {
@@ -18,6 +18,8 @@ export default function OutfitCard({ outfit, allItems }: OutfitCardProps) {
   const router = useRouter();
   const { remove } = useOutfits();
   const { showToast } = useToast();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   const outfitItems = useMemo(() => {
     return outfit.itemIds
@@ -40,48 +42,51 @@ export default function OutfitCard({ outfit, allItems }: OutfitCardProps) {
   }
 
   return (
-    <ThemedView style={styles.card}>
-      <ThemedText type="defaultSemiBold">{outfit.name}</ThemedText>
+    <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.separator }, Shadows.card]}>
+      <ThemedText type="headline">{outfit.name}</ThemedText>
       <OutfitPreview items={outfitItems} />
 
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => router.push(`/outfits/${outfit.id}`)} style={styles.openBtn}>
-          <Ionicons name="open-outline" size={16} color="#007AFF" />
-          <ThemedText style={styles.openBtnText}>Open</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={confirmDelete} style={styles.deleteBtn}>
-          <Ionicons name="trash-outline" size={16} color="#d9534f" />
-        </TouchableOpacity>
+        <Pressable
+          onPress={() => router.push(`/outfits/${outfit.id}`)}
+          style={({ pressed }) => [styles.openBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name="open-outline" size={16} color={colors.tint} />
+          <ThemedText type="footnote" style={{ color: colors.tint, fontWeight: '600' }}>Open</ThemedText>
+        </Pressable>
+        <Pressable
+          onPress={confirmDelete}
+          style={({ pressed }) => [styles.deleteBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.destructive} />
+        </Pressable>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: 12,
-    borderRadius: 8,
+    padding: Spacing.md,
+    borderRadius: Radii.card,
     borderWidth: 1,
-    borderColor: '#eee',
-    gap: 8,
+    gap: Spacing.sm,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Spacing.xs,
   },
   openBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    padding: 8,
-  },
-  openBtnText: {
-    color: '#007AFF',
-    fontSize: 14,
+    gap: Spacing.xs,
+    padding: Spacing.sm,
+    borderRadius: Radii.sm,
   },
   deleteBtn: {
-    padding: 8,
+    padding: Spacing.sm,
+    borderRadius: Radii.sm,
   },
 });

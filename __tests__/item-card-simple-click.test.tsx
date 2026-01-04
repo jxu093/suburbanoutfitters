@@ -48,19 +48,6 @@ jest.mock('../app/components/toast', () => ({
   }),
 }));
 
-jest.mock('../app/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#000',
-      background: '#fff',
-      border: '#ddd',
-      success: '#4CAF50',
-      error: '#f44336',
-      textSecondary: '#666',
-    },
-  },
-}));
-
 jest.mock('../app/components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
@@ -119,15 +106,11 @@ describe('ItemCard - Simple click test', () => {
       console.log('star-outline not found');
     }
 
-    console.log('\n=== Clicking the first TouchableOpacity (star icon) ===');
-    const { UNSAFE_root } = render(<ItemCard item={item} />);
-    const touchables = UNSAFE_root.findAllByType(require('react-native').TouchableOpacity);
-    console.log(`Found ${touchables.length} TouchableOpacity elements`);
-
-    // First touchable should be the star button
-    const starButton = touchables[0];
-    console.log('Clicking star button...');
-    fireEvent.press(starButton);
+    console.log('\n=== Clicking the favorite button ===');
+    const { getByTestId } = render(<ItemCard item={item} />);
+    const favoriteButton = getByTestId('favorite-button');
+    console.log('Clicking favorite button...');
+    fireEvent.press(favoriteButton);
 
     // Give async operations time to complete
     await new Promise((resolve) => setTimeout(resolve, 100));
