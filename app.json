@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.jex.suburbanoutfitter",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Allow the app to use the camera to add photos of clothing items.",
@@ -18,6 +19,7 @@
       }
     },
     "android": {
+      "package": "com.jex.suburbanoutfitter",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -58,6 +60,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "WEATHER_API_KEY": {},
+      "router": {},
+      "eas": {
+        "projectId": "eb8799a3-7e03-4316-a77b-1975b96e9bda"
+      }
     }
   }
 }
