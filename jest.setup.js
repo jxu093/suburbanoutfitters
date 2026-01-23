@@ -53,6 +53,13 @@ jest.mock('react-native', () => {
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
     },
+    Linking: {
+      openURL: jest.fn().mockResolvedValue(true),
+      canOpenURL: jest.fn().mockResolvedValue(true),
+      getInitialURL: jest.fn().mockResolvedValue(null),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    },
     NativeModules: {},
     useColorScheme: () => 'light',
     useWindowDimensions: () => ({ width: 375, height: 812 }),

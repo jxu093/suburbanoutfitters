@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AIAttributeTags } from '../components/ai-attribute-tags';
 import ImagePickerComponent from '../components/image-picker';
 import { ThemedButton } from '../components/themed-button';
 import { ThemedText } from '../components/themed-text';
@@ -10,7 +11,9 @@ import { CATEGORIES, getCategoryDisplayName } from '../constants';
 import { Colors, Radii, Spacing } from '../constants/theme';
 import { useItems } from '../hooks/use-items';
 import { categorizeClothesByImage } from '../services/ai-categorization';
-import { downloadAndSaveFromUrl } from '../services/image-service';
+import { aiService } from '../services/ai';
+import { downloadAndSaveFromUrl, resizeForAIAnalysis } from '../services/image-service';
+import type { AIAnalysisResult } from '../types';
 
 export default function AddItemScreen() {
   const [name, setName] = useState('');
@@ -22,6 +25,8 @@ export default function AddItemScreen() {
   const [imageUrl, setImageUrl] = useState('');
   const [isDownloadingUrl, setIsDownloadingUrl] = useState(false);
   const [isFromUrl, setIsFromUrl] = useState(false);
+  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const { add } = useItems();
   const { showToast } = useToast();
   const colorScheme = useColorScheme();
@@ -101,6 +106,7 @@ export default function AddItemScreen() {
       setPicked(savedImage);
       setIsFromUrl(true);
       setImageUrl('');
+      setAiAnalysis(null); // Clear previous analysis
       showToast('Image downloaded successfully', 'success');
     } catch (error) {
       console.error('Download error:', error);
@@ -110,9 +116,68 @@ export default function AddItemScreen() {
     }
   }
 
+  async function analyzeWithAI() {
+    if (!picked?.uri) {
+      showToast('Please select an image first', 'error');
+      return;
+    }
+
+    // Check if AI is configured
+    const isConfigured = await aiService.isConfigured();
+    if (!isConfigured) {
+      Alert.alert(
+        'AI Not Configured',
+        'Please configure your AI API key in Settings to use AI analysis.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setIsAnalyzingAI(true);
+    try {
+      // Resize image for AI analysis
+      const base64Image = await resizeForAIAnalysis(picked.uri);
+
+      // Analyze the image
+      const analysis = await aiService.analyzeClothingItem(base64Image);
+      setAiAnalysis(analysis);
+
+      // Auto-fill category if detected and not already set
+      if (analysis.category && !category) {
+        // Map AI category to our CATEGORIES if possible
+        const matchedCategory = CATEGORIES.find(
+          c => c.toLowerCase() === analysis.category?.toLowerCase()
+        );
+        if (matchedCategory) {
+          setCategory(matchedCategory);
+        }
+      }
+
+      // Auto-fill name if not set
+      if (!name && analysis.subcategory) {
+        // Create a name from the analysis
+        const colorPart = analysis.colors?.[0] || '';
+        const typePart = analysis.subcategory;
+        setName(`${colorPart} ${typePart}`.trim());
+      }
+
+      showToast('AI analysis complete', 'success');
+    } catch (error: any) {
+      console.error('AI analysis error:', error);
+      const message = error.code === 'NO_API_KEY'
+        ? 'Please configure your API key in Settings.'
+        : 'AI analysis failed. Please try again.';
+      showToast(message, 'error');
+    } finally {
+      setIsAnalyzingAI(false);
+    }
+  }
+
   async function save() {
     if (!name) return alert('Please provide a name for the item');
-    const id = await add({
+
+    // Build item with AI attributes if available
+    const itemData: Parameters<typeof add>[0] = {
       name,
       category,
       imageUri: picked?.uri ?? null,
@@ -120,7 +185,26 @@ export default function AddItemScreen() {
       notes,
       tags,
       createdAt: Date.now(),
-    });
+    };
+
+    // Add AI attributes if analyzed
+    if (aiAnalysis) {
+      itemData.aiCategory = aiAnalysis.category ?? null;
+      itemData.aiSubcategory = aiAnalysis.subcategory ?? null;
+      itemData.aiColors = aiAnalysis.colors ?? null;
+      itemData.aiColorFamily = aiAnalysis.colorFamily ?? null;
+      itemData.aiStyle = aiAnalysis.style ?? null;
+      itemData.aiFormality = aiAnalysis.formality ?? null;
+      itemData.aiOccasions = aiAnalysis.occasions ?? null;
+      itemData.aiPattern = aiAnalysis.pattern ?? null;
+      itemData.aiMaterial = aiAnalysis.material ?? null;
+      itemData.aiSeasons = aiAnalysis.seasons ?? null;
+      itemData.aiWeatherSuitability = aiAnalysis.weatherSuitability ?? null;
+      itemData.aiAnalyzedAt = Date.now();
+      itemData.aiConfidence = aiAnalysis.confidence ?? null;
+    }
+
+    const id = await add(itemData);
 
     if (id) {
       showToast('Item added to closet');
@@ -130,6 +214,7 @@ export default function AddItemScreen() {
       setTags([]);
       setPicked(null);
       setIsFromUrl(false);
+      setAiAnalysis(null);
     }
   }
 
@@ -219,15 +304,58 @@ export default function AddItemScreen() {
             onDone={(saved) => {
               setPicked(saved);
               setIsFromUrl(false);
+              setAiAnalysis(null); // Clear previous analysis
             }}
             showPreview={picked !== null}
             previewUri={picked?.thumbnailUri}
             onReset={() => {
               setPicked(null);
               setIsFromUrl(false);
+              setAiAnalysis(null);
             }}
           />
         </View>
+
+        {/* AI Analysis Section */}
+        {picked && (
+          <View style={styles.formSection}>
+            <ThemedText type="footnote" style={[styles.label, { color: colors.textSecondary }]}>AI ANALYSIS</ThemedText>
+            {!aiAnalysis ? (
+              <Pressable
+                onPress={analyzeWithAI}
+                disabled={isAnalyzingAI}
+                style={({ pressed }) => [
+                  styles.analyzeBtn,
+                  { backgroundColor: pressed ? colors.tint + 'DD' : colors.tint },
+                  isAnalyzingAI && styles.analyzeBtnDisabled,
+                ]}
+              >
+                {isAnalyzingAI ? (
+                  <>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <ThemedText style={styles.analyzeBtnText}>Analyzing...</ThemedText>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={18} color="#fff" />
+                    <ThemedText style={styles.analyzeBtnText}>Analyze with AI</ThemedText>
+                  </>
+                )}
+              </Pressable>
+            ) : (
+              <View style={styles.analysisResult}>
+                <View style={styles.analysisHeader}>
+                  <Ionicons name="checkmark-circle" size={18} color="#4caf50" />
+                  <ThemedText style={styles.analysisHeaderText}>AI Analysis Complete</ThemedText>
+                  <Pressable onPress={analyzeWithAI} style={styles.reanalyzeBtn}>
+                    <Ionicons name="refresh" size={16} color={colors.tint} />
+                  </Pressable>
+                </View>
+                <AIAttributeTags item={aiAnalysis as any} />
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.formSection}>
           <ThemedText type="footnote" style={[styles.label, { color: colors.textSecondary }]}>TAGS (OPTIONAL)</ThemedText>
@@ -314,5 +442,41 @@ const styles = StyleSheet.create({
   },
   saveButtonContainer: {
     marginTop: Spacing.sm,
+  },
+  analyzeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radii.button,
+    minHeight: 48,
+  },
+  analyzeBtnDisabled: {
+    opacity: 0.7,
+  },
+  analyzeBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  analysisResult: {
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radii.card,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  analysisHeaderText: {
+    flex: 1,
+    fontWeight: '600',
+    color: '#4caf50',
+  },
+  reanalyzeBtn: {
+    padding: Spacing.xs,
   },
 });

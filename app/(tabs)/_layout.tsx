@@ -74,6 +74,40 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      {/* AI generate screen accessible via outfits */}
+      <Tabs.Screen
+        name="outfits/ai-generate"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Inspiration matching screen */}
+      <Tabs.Screen
+        name="outfits/inspiration"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Settings screens - accessible via navigation */}
+      <Tabs.Screen
+        name="settings/profile"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="settings/style-quiz"
+        options={{
+          href: null,
+        }}
+      />
+      {/* AI Setup screen */}
+      <Tabs.Screen
+        name="settings/ai-setup"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

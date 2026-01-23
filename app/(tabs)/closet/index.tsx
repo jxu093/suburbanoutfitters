@@ -67,6 +67,12 @@ export default function ClosetScreen() {
         <ThemedText type="largeTitle">Closet</ThemedText>
         <View style={styles.headerActions}>
           <Pressable
+            onPress={() => router.push('/settings/ai-setup')}
+            style={({ pressed }) => [styles.helpBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
+          >
+            <Ionicons name="sparkles-outline" size={24} color={colors.icon} />
+          </Pressable>
+          <Pressable
             onPress={showIconLegend}
             style={({ pressed }) => [styles.helpBtn, { backgroundColor: pressed ? colors.fill : 'transparent' }]}
           >

@@ -8,6 +8,7 @@ import { getCategoryDisplayName, normalizeCategory, type Category } from '../con
 import { Colors, Radii, Shadows, Spacing } from '../constants/theme';
 import { useItems } from '../hooks/use-items';
 import { useOutfits } from '../hooks/use-outfits';
+import { aiService } from '../services/ai';
 import { pickRandomOutfit, type RandomizeOptions, DEFAULT_OPTIONS } from '../services/randomizer';
 import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '../services/weather';
 import type { Item, Outfit } from '../types';
@@ -31,6 +32,7 @@ export default function OutfitBuilder() {
   const [randomizeOptions, setRandomizeOptions] = useState<RandomizeOptions>(DEFAULT_OPTIONS);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [isAISuggesting, setIsAISuggesting] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -179,6 +181,68 @@ export default function OutfitBuilder() {
     setCurrent([]);
   }
 
+  async function aiSuggestPairings() {
+    // Need at least one item to suggest pairings for
+    if (current.length === 0) {
+      showToast('Add at least one item first', 'error');
+      return;
+    }
+
+    const isConfigured = await aiService.isConfigured();
+    if (!isConfigured) {
+      showToast('Configure AI in Settings first', 'error');
+      return;
+    }
+
+    setIsAISuggesting(true);
+    try {
+      // Use the first item as the base for pairing
+      const baseItem = current[0];
+      const candidates = available.filter(
+        (item) => !current.some((c) => c.id === item.id) && item.aiCategory
+      );
+
+      if (candidates.length === 0) {
+        showToast('No analyzed items available. Analyze more items first.', 'error');
+        return;
+      }
+
+      const suggestedIds = await aiService.suggestPairings(baseItem, candidates);
+
+      // Get the suggested items and add them (respecting category limits)
+      const suggestedItems = suggestedIds
+        .map((id) => candidates.find((item) => item.id === id))
+        .filter((item): item is Item => item !== undefined);
+
+      // Add items that don't conflict with existing categories
+      const currentCategories = new Set(
+        current.map((item) => normalizeCategory(item.category)).filter(Boolean)
+      );
+
+      const newItems: Item[] = [];
+      for (const item of suggestedItems) {
+        const category = normalizeCategory(item.category);
+        if (category && !currentCategories.has(category)) {
+          currentCategories.add(category);
+          newItems.push(item);
+        }
+        if (newItems.length >= 3) break; // Limit to 3 suggestions at a time
+      }
+
+      if (newItems.length > 0) {
+        setCurrent([...current, ...newItems]);
+        showToast(`AI suggested ${newItems.length} items`, 'success');
+      } else {
+        showToast('No new suggestions - try removing some items', 'info');
+      }
+    } catch (error: any) {
+      console.error('AI suggestion error:', error);
+      showToast('AI suggestion failed', 'error');
+    } finally {
+      setIsAISuggesting(false);
+    }
+  }
+
   async function saveOutfit() {
     if (!current || current.length === 0) {
       showToast('Add items to save', 'error');
@@ -241,9 +305,21 @@ export default function OutfitBuilder() {
 
         {/* Action buttons - all in one row */}
         <View style={styles.buttonRow}>
+          <TouchableOpacity
+            onPress={aiSuggestPairings}
+            disabled={isAISuggesting}
+            style={[styles.actionBtn, styles.aiBtn]}
+          >
+            {isAISuggesting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="sparkles" size={16} color="#fff" />
+            )}
+            <ThemedText style={styles.aiBtnText}>AI</ThemedText>
+          </TouchableOpacity>
           <TouchableOpacity onPress={randomize} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="shuffle-outline" size={16} color={colors.tint} />
-            <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Randomize</ThemedText>
+            <ThemedText style={[styles.actionBtnText, { color: colors.tint }]}>Random</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowOptionsModal(true)} style={[styles.iconBtn, { borderColor: colors.border }]}>
             <Ionicons name="options-outline" size={18} color={colors.tint} />
@@ -528,6 +604,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionBtnText: { fontSize: 11, fontWeight: '600' },
+  aiBtn: {
+    backgroundColor: '#9c27b0',
+    borderColor: '#9c27b0',
+  },
+  aiBtnText: { fontSize: 11, fontWeight: '600', color: '#fff' },
   silhouetteContainer: { gap: Spacing.lg, paddingVertical: Spacing.md },
   mainRow: { flexDirection: 'row', gap: Spacing.xl, justifyContent: 'center' },
   leftColumn: { gap: Spacing.lg, alignItems: 'center' },

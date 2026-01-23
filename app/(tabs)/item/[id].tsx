@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Button,
   Image as RNImage,
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AIAttributeTags } from '../../../app/components/ai-attribute-tags';
 import { ThemedText } from '../../../app/components/themed-text';
 import { ThemedView } from '../../../app/components/themed-view';
 import { useToast } from '../../../app/components/toast';
@@ -25,6 +27,8 @@ import {
   createListTag,
 } from '../../../app/constants';
 import { useItems } from '../../../app/hooks/use-items';
+import { aiService } from '../../../app/services/ai';
+import { resizeForAIAnalysis } from '../../../app/services/image-service';
 
 export default function ItemScreen() {
   const params = useLocalSearchParams();
@@ -37,6 +41,7 @@ export default function ItemScreen() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [notes, setNotes] = useState('');
+  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
 
   useEffect(() => {
     const found = items.find((i) => i.id === id) ?? null;
@@ -192,6 +197,54 @@ export default function ItemScreen() {
     ]);
   }
 
+  async function analyzeWithAI() {
+    if (!item?.imageUri) {
+      showToast('No image available for analysis', 'error');
+      return;
+    }
+
+    // Check if AI is configured
+    const isConfigured = await aiService.isConfigured();
+    if (!isConfigured) {
+      Alert.alert(
+        'AI Not Configured',
+        'Please configure your AI API key in Settings to use AI analysis.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setIsAnalyzingAI(true);
+    try {
+      // Resize image for AI analysis
+      const base64Image = await resizeForAIAnalysis(item.imageUri);
+
+      // Analyze and update the item in the database
+      await aiService.analyzeAndUpdateItem(base64Image, item.id!);
+      await refresh();
+
+      showToast('AI analysis complete', 'success');
+    } catch (error: any) {
+      console.error('AI analysis error:', error);
+      const message = error.code === 'NO_API_KEY'
+        ? 'Please configure your API key in Settings.'
+        : 'AI analysis failed. Please try again.';
+      showToast(message, 'error');
+    } finally {
+      setIsAnalyzingAI(false);
+    }
+  }
+
+  // Check if item has AI analysis
+  const hasAIAnalysis = !!(
+    item?.aiCategory ||
+    item?.aiColors ||
+    item?.aiStyle ||
+    item?.aiOccasions ||
+    item?.aiPattern ||
+    item?.aiMaterial
+  );
+
   if (!item) {
     return (
       <ThemedView style={styles.container}>
@@ -264,6 +317,57 @@ export default function ItemScreen() {
             </View>
           )}
 
+          {/* AI Analysis Section */}
+          <View style={styles.aiSection}>
+            <View style={styles.aiHeader}>
+              <Ionicons name="sparkles" size={18} color="#9c27b0" />
+              <ThemedText type="defaultSemiBold" style={styles.aiTitle}>AI Analysis</ThemedText>
+            </View>
+
+            {hasAIAnalysis ? (
+              <View style={styles.aiContent}>
+                <AIAttributeTags item={item} />
+                {item.aiAnalyzedAt && (
+                  <ThemedText style={styles.aiTimestamp}>
+                    Analyzed {new Date(item.aiAnalyzedAt).toLocaleDateString()}
+                  </ThemedText>
+                )}
+                <TouchableOpacity
+                  onPress={analyzeWithAI}
+                  disabled={isAnalyzingAI}
+                  style={styles.reanalyzeBtn}
+                >
+                  {isAnalyzingAI ? (
+                    <ActivityIndicator size="small" color="#9c27b0" />
+                  ) : (
+                    <>
+                      <Ionicons name="refresh" size={16} color="#9c27b0" />
+                      <ThemedText style={styles.reanalyzeBtnText}>Re-analyze</ThemedText>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={analyzeWithAI}
+                disabled={isAnalyzingAI}
+                style={styles.analyzeBtn}
+              >
+                {isAnalyzingAI ? (
+                  <>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <ThemedText style={styles.analyzeBtnText}>Analyzing...</ThemedText>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={18} color="#fff" />
+                    <ThemedText style={styles.analyzeBtnText}>Analyze with AI</ThemedText>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity onPress={toggleFavorite} style={styles.actionBtn}>
@@ -315,4 +419,61 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 8, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#eee' },
   actionBtn: { alignItems: 'center', gap: 4 },
   actionText: { fontSize: 12, color: '#666' },
+  // AI Section styles
+  aiSection: {
+    gap: 12,
+    padding: 12,
+    backgroundColor: 'rgba(156, 39, 176, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(156, 39, 176, 0.15)',
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  aiTitle: {
+    color: '#9c27b0',
+  },
+  aiContent: {
+    gap: 12,
+  },
+  aiTimestamp: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  analyzeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#9c27b0',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  analyzeBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reanalyzeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#9c27b0',
+    alignSelf: 'flex-start',
+  },
+  reanalyzeBtnText: {
+    color: '#9c27b0',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });

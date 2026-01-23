@@ -9,6 +9,9 @@ export type SavedImage = {
   height?: number;
 };
 
+// Default size for AI analysis (balance quality vs API cost)
+const AI_ANALYSIS_SIZE = 512;
+
 // Create directories using new API - Paths.document is a Directory object
 const IMAGES_DIR_NAME = 'images';
 const THUMBS_DIR_NAME = 'thumbs';
@@ -168,4 +171,67 @@ export async function deleteImageFiles(imageUri?: string | null, thumbUri?: stri
 
   deleteFile(imageUri);
   deleteFile(thumbUri);
+}
+
+/**
+ * Resize an image for AI analysis and return as base64.
+ * Uses a smaller size (512px) to reduce API costs while maintaining quality.
+ */
+export async function resizeForAIAnalysis(uri: string, size = AI_ANALYSIS_SIZE): Promise<string> {
+  // Resize the image
+  const image = ImageManipulator.ImageManipulator.manipulate(uri);
+  const resized = await image.resize({ width: size }).renderAsync();
+  const result = await resized.saveAsync({
+    format: ImageManipulator.SaveFormat.JPEG,
+    compress: 0.8,
+  });
+
+  // Read as base64
+  return readImageAsBase64(result.uri);
+}
+
+/**
+ * Read an image file as base64 string.
+ */
+export async function readImageAsBase64(uri: string): Promise<string> {
+  const file = new File(uri);
+
+  if (!file.exists) {
+    throw new Error(`Image file not found: ${uri}`);
+  }
+
+  // Use fetch to read as blob and convert to base64
+  return await fileToBase64(uri);
+}
+
+/**
+ * Convert a file URI to base64 string.
+ * Works in React Native/Expo environment.
+ */
+async function fileToBase64(uri: string): Promise<string> {
+  // In Expo, we can use fetch to read local files as blobs
+  const response = await fetch(uri);
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+      const base64 = reader.result as string;
+      const base64Data = base64.split(',')[1] || base64;
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Pick an image from library and return as base64 for AI analysis.
+ * Resizes to AI_ANALYSIS_SIZE for cost efficiency.
+ */
+export async function pickImageForAIAnalysis(): Promise<string | null> {
+  const uri = await pickFromLibraryAsync();
+  if (!uri) return null;
+  return resizeForAIAnalysis(uri);
 }

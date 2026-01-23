@@ -49,16 +49,27 @@ export default function OutfitsListScreen() {
       </View>
 
       <View style={styles.generateRow}>
+        <TouchableOpacity onPress={() => router.push('/outfits/ai-generate')} style={styles.aiBtn}>
+          <Ionicons name="sparkles" size={18} color="#fff" />
+          <ThemedText style={styles.generateBtnText}>AI Stylist</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/outfits/inspiration')} style={styles.inspoBtn}>
+          <Ionicons name="image-outline" size={18} color="#fff" />
+          <ThemedText style={styles.generateBtnText}>Inspo</ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.generateRow}>
         <TouchableOpacity onPress={generateQuickOutfit} style={styles.generateBtn}>
           <Ionicons name="shuffle-outline" size={18} color="#fff" />
-          <ThemedText style={styles.generateBtnText}>Generate Outfit</ThemedText>
+          <ThemedText style={styles.generateBtnText}>Random</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.push({ pathname: '/outfits/builder', params: { mode: 'fill' } })}
           style={[styles.generateBtn, styles.fillBtn]}
         >
           <Ionicons name="grid-outline" size={18} color="#666" />
-          <ThemedText style={styles.fillBtnText}>Fill Missing</ThemedText>
+          <ThemedText style={styles.fillBtnText}>Fill</ThemedText>
         </TouchableOpacity>
       </View>
 
@@ -103,9 +114,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
   },
-  generateBtnText: { color: '#fff', fontWeight: '600' },
+  generateBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  aiBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#9c27b0',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  inspoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#e91e63',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
   fillBtn: { backgroundColor: '#e0e0e0' },
-  fillBtnText: { color: '#333', fontWeight: '600' },
+  fillBtnText: { color: '#333', fontWeight: '600', fontSize: 13 },
   refreshRow: { paddingHorizontal: 12, paddingVertical: 8 },
   refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   refreshText: { color: '#666', fontSize: 13 },

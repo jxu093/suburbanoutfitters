@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'wardrobe.db';
+const CURRENT_DB_VERSION = 2; // Increment when adding migrations
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -22,10 +23,75 @@ export type DBItemRow = {
   wornAt?: number | null;
   hidden?: number | null; // 0 or 1
   hiddenUntil?: number | null; // unix ms timestamp when hidden expires
+  // AI attributes (added in v2)
+  aiCategory?: string | null;
+  aiSubcategory?: string | null;
+  aiColors?: string | null; // JSON stringified array
+  aiColorFamily?: string | null;
+  aiStyle?: string | null; // JSON stringified array
+  aiFormality?: number | null;
+  aiOccasions?: string | null; // JSON stringified array
+  aiPattern?: string | null;
+  aiMaterial?: string | null;
+  aiSeasons?: string | null; // JSON stringified array
+  aiWeatherSuitability?: string | null; // JSON stringified array
+  aiAnalyzedAt?: number | null;
+  aiConfidence?: number | null;
+};
+
+// User profile for AI personalization
+export type DBUserProfileRow = {
+  id?: number;
+  bodyType?: string | null;
+  skinTone?: string | null;
+  height?: string | null;
+  preferredStyles?: string | null; // JSON stringified array
+  avoidedStyles?: string | null; // JSON stringified array
+  preferredColors?: string | null; // JSON stringified array
+  avoidedColors?: string | null; // JSON stringified array
+  formalityDefault?: number | null;
+  lifestyle?: string | null; // JSON stringified array
+  acceptedCount?: number | null;
+  rejectedCount?: number | null;
+  lastUpdated?: number | null;
+  profileCompleted?: number | null; // 0 or 1
+  skippedProfile?: number | null; // 0 or 1
+};
+
+// Outfit feedback for learning
+export type DBOutfitFeedbackRow = {
+  id?: number;
+  outfitItemIds: string; // JSON stringified array
+  action: string;
+  occasion?: string | null;
+  weather?: string | null;
+  createdAt?: number;
+};
+
+// AI analysis cache
+export type DBAICacheRow = {
+  itemId: number;
+  attributes: string; // JSON stringified AIAnalysisResult
+  createdAt?: number;
+  expiresAt?: number | null;
+};
+
+// Settings (for API keys, etc.)
+export type DBSettingsRow = {
+  key: string;
+  value: string;
 };
 
 async function ensureSchema() {
   const database = getDB();
+
+  // Create settings table first (needed for version tracking)
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
 
   // create items table if not exists
   await database.execAsync(`
@@ -59,6 +125,117 @@ async function ensureSchema() {
   await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);`);
   await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_hidden ON items(hidden);`);
   await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_items_createdAt ON items(createdAt);`);
+
+  // Run migrations
+  await runMigrations();
+}
+
+async function getDBVersion(): Promise<number> {
+  const database = getDB();
+  try {
+    const result = await database.getFirstAsync<{ value: string }>(
+      `SELECT value FROM settings WHERE key = 'db_version'`
+    );
+    return result ? parseInt(result.value, 10) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+async function setDBVersion(version: number): Promise<void> {
+  const database = getDB();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO settings (key, value) VALUES ('db_version', ?)`,
+    [version.toString()]
+  );
+}
+
+async function runMigrations(): Promise<void> {
+  const currentVersion = await getDBVersion();
+
+  if (currentVersion < 2) {
+    await migrateToV2();
+    await setDBVersion(2);
+  }
+
+  // Add future migrations here:
+  // if (currentVersion < 3) { await migrateToV3(); await setDBVersion(3); }
+}
+
+async function migrateToV2(): Promise<void> {
+  const database = getDB();
+
+  // Add AI columns to items table (SQLite requires one ALTER per column)
+  const aiColumns = [
+    'aiCategory TEXT',
+    'aiSubcategory TEXT',
+    'aiColors TEXT',
+    'aiColorFamily TEXT',
+    'aiStyle TEXT',
+    'aiFormality INTEGER',
+    'aiOccasions TEXT',
+    'aiPattern TEXT',
+    'aiMaterial TEXT',
+    'aiSeasons TEXT',
+    'aiWeatherSuitability TEXT',
+    'aiAnalyzedAt INTEGER',
+    'aiConfidence REAL',
+  ];
+
+  for (const col of aiColumns) {
+    try {
+      await database.execAsync(`ALTER TABLE items ADD COLUMN ${col};`);
+    } catch {
+      // Column may already exist, ignore
+    }
+  }
+
+  // Create user_profile table
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS user_profile (
+      id INTEGER PRIMARY KEY NOT NULL,
+      bodyType TEXT,
+      skinTone TEXT,
+      height TEXT,
+      preferredStyles TEXT,
+      avoidedStyles TEXT,
+      preferredColors TEXT,
+      avoidedColors TEXT,
+      formalityDefault INTEGER,
+      lifestyle TEXT,
+      acceptedCount INTEGER DEFAULT 0,
+      rejectedCount INTEGER DEFAULT 0,
+      lastUpdated INTEGER,
+      profileCompleted INTEGER DEFAULT 0,
+      skippedProfile INTEGER DEFAULT 0
+    );
+  `);
+
+  // Create outfit_feedback table
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS outfit_feedback (
+      id INTEGER PRIMARY KEY NOT NULL,
+      outfitItemIds TEXT NOT NULL,
+      action TEXT NOT NULL,
+      occasion TEXT,
+      weather TEXT,
+      createdAt INTEGER
+    );
+  `);
+
+  // Create ai_cache table
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS ai_cache (
+      itemId INTEGER PRIMARY KEY,
+      attributes TEXT NOT NULL,
+      createdAt INTEGER,
+      expiresAt INTEGER
+    );
+  `);
+
+  // Create indexes for new tables
+  await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_outfit_feedback_createdAt ON outfit_feedback(createdAt);`);
+  await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_ai_cache_expiresAt ON ai_cache(expiresAt);`);
 }
 
 export async function initDB() {
@@ -176,4 +353,162 @@ export async function updateOutfit(id: number, changes: Partial<DBOutfitRow>) {
 export async function deleteOutfit(id: number) {
   const database = getDB();
   await database.runAsync(`DELETE FROM outfits WHERE id = ?;`, [id]);
+}
+
+// ============ Settings CRUD ============
+
+export async function getSetting(key: string): Promise<string | null> {
+  const database = getDB();
+  const row = await database.getFirstAsync<DBSettingsRow>(
+    `SELECT value FROM settings WHERE key = ?`,
+    [key]
+  );
+  return row?.value ?? null;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const database = getDB();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`,
+    [key, value]
+  );
+}
+
+export async function deleteSetting(key: string): Promise<void> {
+  const database = getDB();
+  await database.runAsync(`DELETE FROM settings WHERE key = ?`, [key]);
+}
+
+// ============ User Profile CRUD ============
+
+export async function getUserProfile(): Promise<DBUserProfileRow | null> {
+  const database = getDB();
+  const row = await database.getFirstAsync<DBUserProfileRow>(
+    `SELECT * FROM user_profile LIMIT 1`
+  );
+  return row ?? null;
+}
+
+export async function saveUserProfile(profile: Partial<DBUserProfileRow>): Promise<number> {
+  const database = getDB();
+  const existing = await getUserProfile();
+  const now = Date.now();
+
+  if (existing?.id) {
+    // Update existing profile
+    const fields = Object.keys(profile).filter(k => k !== 'id');
+    if (fields.length === 0) return existing.id;
+
+    const setClause = fields.map((f) => `${f} = ?`).join(', ');
+    const args = fields.map((f) => (profile as any)[f]);
+    args.push(now); // lastUpdated
+    args.push(existing.id);
+
+    await database.runAsync(
+      `UPDATE user_profile SET ${setClause}, lastUpdated = ? WHERE id = ?`,
+      args
+    );
+    return existing.id;
+  } else {
+    // Insert new profile
+    const result = await database.runAsync(
+      `INSERT INTO user_profile (
+        bodyType, skinTone, height, preferredStyles, avoidedStyles,
+        preferredColors, avoidedColors, formalityDefault, lifestyle,
+        acceptedCount, rejectedCount, lastUpdated, profileCompleted, skippedProfile
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        profile.bodyType ?? null,
+        profile.skinTone ?? null,
+        profile.height ?? null,
+        profile.preferredStyles ?? null,
+        profile.avoidedStyles ?? null,
+        profile.preferredColors ?? null,
+        profile.avoidedColors ?? null,
+        profile.formalityDefault ?? null,
+        profile.lifestyle ?? null,
+        profile.acceptedCount ?? 0,
+        profile.rejectedCount ?? 0,
+        now,
+        profile.profileCompleted ?? 0,
+        profile.skippedProfile ?? 0,
+      ]
+    );
+    return result.lastInsertRowId;
+  }
+}
+
+// ============ Outfit Feedback CRUD ============
+
+export async function createOutfitFeedback(feedback: Omit<DBOutfitFeedbackRow, 'id'>): Promise<number> {
+  const database = getDB();
+  const now = Date.now();
+  const result = await database.runAsync(
+    `INSERT INTO outfit_feedback (outfitItemIds, action, occasion, weather, createdAt) VALUES (?, ?, ?, ?, ?)`,
+    [
+      feedback.outfitItemIds,
+      feedback.action,
+      feedback.occasion ?? null,
+      feedback.weather ?? null,
+      feedback.createdAt ?? now,
+    ]
+  );
+  return result.lastInsertRowId;
+}
+
+export async function getOutfitFeedback(limit = 100): Promise<DBOutfitFeedbackRow[]> {
+  const database = getDB();
+  const rows = await database.getAllAsync<DBOutfitFeedbackRow>(
+    `SELECT * FROM outfit_feedback ORDER BY createdAt DESC LIMIT ?`,
+    [limit]
+  );
+  return rows;
+}
+
+export async function incrementProfileFeedbackCount(action: 'accept' | 'reject'): Promise<void> {
+  const database = getDB();
+  const column = action === 'accept' ? 'acceptedCount' : 'rejectedCount';
+  await database.runAsync(
+    `UPDATE user_profile SET ${column} = ${column} + 1, lastUpdated = ?`,
+    [Date.now()]
+  );
+}
+
+// ============ AI Cache CRUD ============
+
+export async function getCachedAIAnalysis(itemId: number): Promise<string | null> {
+  const database = getDB();
+  const now = Date.now();
+  const row = await database.getFirstAsync<DBAICacheRow>(
+    `SELECT attributes FROM ai_cache WHERE itemId = ? AND (expiresAt IS NULL OR expiresAt > ?)`,
+    [itemId, now]
+  );
+  return row?.attributes ?? null;
+}
+
+export async function setCachedAIAnalysis(
+  itemId: number,
+  attributes: string,
+  expiresAt?: number | null
+): Promise<void> {
+  const database = getDB();
+  const now = Date.now();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO ai_cache (itemId, attributes, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
+    [itemId, attributes, now, expiresAt ?? null]
+  );
+}
+
+export async function deleteCachedAIAnalysis(itemId: number): Promise<void> {
+  const database = getDB();
+  await database.runAsync(`DELETE FROM ai_cache WHERE itemId = ?`, [itemId]);
+}
+
+export async function clearExpiredAICache(): Promise<void> {
+  const database = getDB();
+  const now = Date.now();
+  await database.runAsync(
+    `DELETE FROM ai_cache WHERE expiresAt IS NOT NULL AND expiresAt <= ?`,
+    [now]
+  );
 }
