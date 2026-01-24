@@ -1,4 +1,4 @@
-import type { AIAnalysisResult, AIOutfitSuggestion, Item, UserProfile } from '../../types';
+import type { AIAnalysisResult, AIOutfitSuggestion, AIShoppingRecommendations, Item, UserProfile } from '../../types';
 import {
   getCachedAIAnalysis,
   getOutfitFeedback,
@@ -8,7 +8,7 @@ import {
   setSetting,
   updateItem,
 } from '../storage';
-import type { AIProvider, InspirationMatch, OutfitContext } from './ai-provider';
+import type { AIProvider, InspirationMatch, OutfitContext, ShoppingContext } from './ai-provider';
 import { AIProviderError, itemToSummary } from './ai-provider';
 import { ClaudeProvider } from './claude-provider';
 
@@ -196,6 +196,31 @@ class AIService {
       .map(itemToSummary);
 
     return provider.suggestPairings(targetSummary, candidateSummaries, occasion);
+  }
+
+  // Generate shopping recommendations for new items to buy
+  async generateShoppingRecommendations(
+    currentItems: Item[],
+    occasion?: string,
+    weather?: string,
+    budget?: 'budget' | 'moderate' | 'premium' | 'luxury'
+  ): Promise<AIShoppingRecommendations> {
+    const provider = await this.ensureProvider();
+
+    // Get user profile for personalization
+    const profileRow = await getUserProfile();
+    const profile = profileRow ? parseUserProfile(profileRow) : undefined;
+
+    // Build context
+    const context: ShoppingContext = {
+      currentItems: currentItems.filter((item) => item.id).map(itemToSummary),
+      occasion,
+      weather,
+      userProfile: profile,
+      budget,
+    };
+
+    return provider.generateShoppingRecommendations(context);
   }
 }
 

@@ -1,4 +1,4 @@
-import type { ItemSummary, OutfitContext } from './ai-provider';
+import type { ItemSummary, OutfitContext, ShoppingContext } from './ai-provider';
 import type { UserProfile } from '../../types';
 
 // Prompt for analyzing a clothing item image
@@ -199,4 +199,59 @@ function getSkinToneColorRecommendations(skinTone: string): string | null {
     default:
       return null;
   }
+}
+
+// Build prompt for shopping recommendations
+export function buildShoppingRecommendationPrompt(context: ShoppingContext): string {
+  const { currentItems, occasion, weather, userProfile, budget } = context;
+
+  let prompt = `You are a personal stylist AI helping someone shop for new clothing. Based on what they already have selected, suggest NEW items they should buy to complete or enhance their outfit.
+
+## Current Items in Outfit:
+${currentItems.length > 0 ? formatItemsForPrompt(currentItems) : 'No items selected yet - suggest a complete outfit'}
+
+## Task:
+Suggest 2-4 NEW items to purchase that would:
+- Complete the outfit if items are missing (e.g., they have pants but need a top)
+- Enhance the look with complementary pieces
+- Add versatility to their wardrobe
+`;
+
+  if (occasion) {
+    prompt += `\n## Occasion: ${occasion}\nSuggest items appropriate for this occasion.\n`;
+  }
+
+  if (weather) {
+    prompt += `\n## Weather: ${weather}\nSuggest weather-appropriate items.\n`;
+  }
+
+  if (budget) {
+    prompt += `\n## Budget Preference: ${budget}\nAdjust price ranges accordingly (budget=lower prices, luxury=higher end).\n`;
+  }
+
+  if (userProfile) {
+    prompt += `\n## User Profile:\n${formatUserProfileForPrompt(userProfile)}\nTailor suggestions to their preferences and body type.\n`;
+  }
+
+  prompt += `
+## Response Format:
+Return ONLY a JSON object:
+{
+  "recommendations": [
+    {
+      "category": "top" | "bottom" | "shoes" | "outerwear" | "hat" | "accessory",
+      "description": "specific item description (e.g., 'Light blue chambray button-down shirt')",
+      "colors": ["suggested colors for this item"],
+      "style": ["style tags like casual, preppy, minimalist"],
+      "priceRange": { "min": 30, "max": 60 },
+      "reasoning": "why this pairs well with the current selection",
+      "searchQuery": "search terms for shopping (e.g., 'mens chambray shirt light blue')"
+    }
+  ],
+  "overallAdvice": "brief styling tip for the complete look"
+}
+
+Be specific with descriptions - include color, material, and style details. Make search queries practical for shopping sites.`;
+
+  return prompt;
 }

@@ -1,4 +1,4 @@
-import type { AIAnalysisResult, AIOutfitSuggestion, Item, UserProfile } from '../../types';
+import type { AIAnalysisResult, AIOutfitSuggestion, AIShoppingRecommendations, Item, UserProfile } from '../../types';
 
 // AI Provider response wrapper
 export type AIResponse = {
@@ -55,6 +55,15 @@ export type InspirationMatch = {
   matchScore: number;
 };
 
+// Context for shopping recommendations
+export type ShoppingContext = {
+  currentItems: ItemSummary[];
+  occasion?: string;
+  weather?: string;
+  userProfile?: UserProfile;
+  budget?: 'budget' | 'moderate' | 'premium' | 'luxury';
+};
+
 // Provider interface - all AI providers must implement this
 export interface AIProvider {
   readonly name: string;
@@ -77,6 +86,11 @@ export interface AIProvider {
     candidateItems: ItemSummary[],
     occasion?: string
   ): Promise<number[]>;
+
+  // Generate shopping recommendations for new items to buy
+  generateShoppingRecommendations(
+    context: ShoppingContext
+  ): Promise<AIShoppingRecommendations>;
 }
 
 // Convert full Item to ItemSummary for AI context

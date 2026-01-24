@@ -11,13 +11,16 @@ import { useOutfits } from '../hooks/use-outfits';
 import { aiService } from '../services/ai';
 import { pickRandomOutfit, type RandomizeOptions, DEFAULT_OPTIONS } from '../services/randomizer';
 import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '../services/weather';
-import type { Item, Outfit } from '../types';
+import type { AIShoppingRecommendations, Item, Outfit } from '../types';
 import { isItemHidden } from '../utils/item-helpers';
 import { categorizeItems } from '../utils/outfit-categorization';
+import { ShoppingRecommendationsList } from './affiliate-product-card';
 import RandomizerOptionsModal from './randomizer-options-modal';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { useToast } from './toast';
+
+type AIMode = 'closet' | 'shop';
 
 export default function OutfitBuilder() {
   const params = useLocalSearchParams();
@@ -33,6 +36,9 @@ export default function OutfitBuilder() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [isAISuggesting, setIsAISuggesting] = useState(false);
+  const [aiMode, setAIMode] = useState<AIMode>('closet');
+  const [shoppingRecommendations, setShoppingRecommendations] = useState<AIShoppingRecommendations | null>(null);
+  const [showShoppingModal, setShowShoppingModal] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -179,9 +185,18 @@ export default function OutfitBuilder() {
 
   function clearOutfit() {
     setCurrent([]);
+    setShoppingRecommendations(null);
   }
 
-  async function aiSuggestPairings() {
+  async function handleAIButton() {
+    if (aiMode === 'closet') {
+      await aiSuggestFromCloset();
+    } else {
+      await aiSuggestShopping();
+    }
+  }
+
+  async function aiSuggestFromCloset() {
     // Need at least one item to suggest pairings for
     if (current.length === 0) {
       showToast('Add at least one item first', 'error');
@@ -198,12 +213,13 @@ export default function OutfitBuilder() {
     try {
       // Use the first item as the base for pairing
       const baseItem = current[0];
+      // Include all available items, not just analyzed ones - AI can work with basic info
       const candidates = available.filter(
-        (item) => !current.some((c) => c.id === item.id) && item.aiCategory
+        (item) => !current.some((c) => c.id === item.id)
       );
 
       if (candidates.length === 0) {
-        showToast('No analyzed items available. Analyze more items first.', 'error');
+        showToast('No other items in closet to suggest', 'error');
         return;
       }
 
@@ -238,6 +254,34 @@ export default function OutfitBuilder() {
     } catch (error: any) {
       console.error('AI suggestion error:', error);
       showToast('AI suggestion failed', 'error');
+    } finally {
+      setIsAISuggesting(false);
+    }
+  }
+
+  async function aiSuggestShopping() {
+    const isConfigured = await aiService.isConfigured();
+    if (!isConfigured) {
+      showToast('Configure AI in Settings first', 'error');
+      return;
+    }
+
+    setIsAISuggesting(true);
+    try {
+      const weatherCondition = weather?.condition;
+      const recommendations = await aiService.generateShoppingRecommendations(
+        current,
+        undefined, // occasion - could add UI for this
+        weatherCondition,
+        'moderate' // budget - could add UI for this
+      );
+
+      setShoppingRecommendations(recommendations);
+      setShowShoppingModal(true);
+      showToast(`Found ${recommendations.recommendations.length} items to shop`, 'success');
+    } catch (error: any) {
+      console.error('AI shopping error:', error);
+      showToast('AI shopping suggestions failed', 'error');
     } finally {
       setIsAISuggesting(false);
     }
@@ -303,19 +347,63 @@ export default function OutfitBuilder() {
           </TouchableOpacity>
         </View>
 
+        {/* AI Mode Toggle */}
+        <View style={styles.aiModeToggle}>
+          <TouchableOpacity
+            onPress={() => setAIMode('closet')}
+            style={[
+              styles.aiModeBtn,
+              aiMode === 'closet' && styles.aiModeBtnActive,
+              { borderColor: colors.border },
+            ]}
+          >
+            <Ionicons
+              name="shirt-outline"
+              size={16}
+              color={aiMode === 'closet' ? '#fff' : colors.tint}
+            />
+            <ThemedText style={[
+              styles.aiModeBtnText,
+              aiMode === 'closet' ? styles.aiModeBtnTextActive : { color: colors.tint },
+            ]}>
+              My Closet
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setAIMode('shop')}
+            style={[
+              styles.aiModeBtn,
+              aiMode === 'shop' && styles.aiModeBtnActive,
+              { borderColor: colors.border },
+            ]}
+          >
+            <Ionicons
+              name="bag-outline"
+              size={16}
+              color={aiMode === 'shop' ? '#fff' : colors.tint}
+            />
+            <ThemedText style={[
+              styles.aiModeBtnText,
+              aiMode === 'shop' ? styles.aiModeBtnTextActive : { color: colors.tint },
+            ]}>
+              Shop New
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
         {/* Action buttons - all in one row */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            onPress={aiSuggestPairings}
+            onPress={handleAIButton}
             disabled={isAISuggesting}
             style={[styles.actionBtn, styles.aiBtn]}
           >
             {isAISuggesting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Ionicons name="sparkles" size={16} color="#fff" />
+              <Ionicons name={aiMode === 'closet' ? 'sparkles' : 'bag'} size={16} color="#fff" />
             )}
-            <ThemedText style={styles.aiBtnText}>AI</ThemedText>
+            <ThemedText style={styles.aiBtnText}>{aiMode === 'closet' ? 'AI' : 'Shop'}</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity onPress={randomize} style={[styles.actionBtn, { borderColor: colors.border }]}>
             <Ionicons name="shuffle-outline" size={16} color={colors.tint} />
@@ -450,6 +538,34 @@ export default function OutfitBuilder() {
         initialOptions={randomizeOptions}
         weatherCondition={weather?.condition}
       />
+
+      {/* Shopping recommendations modal */}
+      <Modal visible={showShoppingModal} animationType="slide" onRequestClose={() => setShowShoppingModal(false)}>
+        <ThemedView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowShoppingModal(false)} style={styles.closeBtn}>
+              <Ionicons name="close" size={28} color={colors.text} />
+            </TouchableOpacity>
+            <ThemedText type="title">Shop New Items</ThemedText>
+            <View style={{ width: 28 }} />
+          </View>
+
+          <ScrollView contentContainerStyle={styles.shoppingContent}>
+            {shoppingRecommendations && (
+              <ShoppingRecommendationsList
+                recommendations={shoppingRecommendations.recommendations}
+                overallAdvice={shoppingRecommendations.overallAdvice}
+                onShopPress={() => {}}
+              />
+            )}
+            {!shoppingRecommendations && (
+              <ThemedText style={styles.emptyText}>
+                No shopping recommendations yet. Try adding some items to your outfit first!
+              </ThemedText>
+            )}
+          </ScrollView>
+        </ThemedView>
+      </Modal>
     </ThemedView>
   );
 }
@@ -583,6 +699,32 @@ const styles = StyleSheet.create({
   weatherCity: {
     fontSize: 12,
   },
+  aiModeToggle: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  aiModeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.button,
+    borderWidth: 1,
+  },
+  aiModeBtnActive: {
+    backgroundColor: '#9c27b0',
+    borderColor: '#9c27b0',
+  },
+  aiModeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  aiModeBtnTextActive: {
+    color: '#fff',
+  },
   buttonRow: { flexDirection: 'row', gap: Spacing.xs },
   actionBtn: {
     flex: 1,
@@ -654,6 +796,7 @@ const styles = StyleSheet.create({
   gridThumb: { width: '100%', aspectRatio: 1, borderRadius: Radii.sm },
   gridItemName: { fontSize: 11, textAlign: 'center' },
   emptyText: { textAlign: 'center', padding: Spacing.xxxl },
+  shoppingContent: { paddingBottom: Spacing.xxxl },
   fullScreenContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',

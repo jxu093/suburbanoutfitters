@@ -105,3 +105,23 @@ export type AIProviderConfig = {
   apiKey: string;
   model?: string;
 };
+
+// Shopping recommendation from AI
+export type ShoppingRecommendation = {
+  category: string;
+  description: string;
+  colors: string[];
+  style: string[];
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  reasoning: string;
+  searchQuery: string; // Pre-built search query for shopping
+};
+
+// Response from AI shopping recommendation
+export type AIShoppingRecommendations = {
+  recommendations: ShoppingRecommendation[];
+  overallAdvice: string;
+};

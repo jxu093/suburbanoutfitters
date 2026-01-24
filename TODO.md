@@ -272,10 +272,218 @@ __tests__/
 
 ---
 
+---
+
+## Phase 7: Dual AI Mode (Closet vs Shopping) ✅
+
+Add two AI modes in the outfit builder - suggestions from user's own closet OR new products to buy.
+
+### Requirements
+
+- [x] Add AI mode toggle in outfit builder
+  - "My Closet" mode (default) - suggests items from user's wardrobe
+  - "Shop New" mode - suggests new products to buy from stores
+  - Toggle button (segmented control) above action buttons
+  - Purple highlight for active mode
+
+- [x] "My Closet" mode (existing functionality)
+  - Uses `suggestPairings()` to find complementary items from user's wardrobe
+  - Shows items user already owns
+  - Works with analyzed or non-analyzed items
+  - AI button shows sparkles icon
+
+- [x] "Shop New" mode (new functionality)
+  - AI analyzes current outfit and suggests what's missing/would complement
+  - Uses `generateShoppingRecommendations()` to get purchase suggestions
+  - Returns: category, description, colors, style, price range suggestions
+  - Shows affiliate shopping links (Amazon/Google) for each suggestion
+  - AI button shows shopping bag icon
+  - Results displayed in modal with scrollable list
+
+- [x] New prompt template: `buildShoppingRecommendationPrompt()` in prompts.ts
+  - Input: current outfit items, occasion, weather, user profile, budget
+  - Output: list of recommended purchases with:
+    - Category (top, shoes, accessory, etc.)
+    - Description (e.g., "light blue oxford shirt")
+    - Suggested colors
+    - Style tags
+    - Price range (min/max)
+    - Why it complements the current selection
+    - Pre-built search query for shopping
+
+- [x] New types in types/index.ts
+  - `ShoppingRecommendation` - individual purchase recommendation
+  - `AIShoppingRecommendations` - response with recommendations array + overall advice
+
+- [x] Shopping recommendation card component in affiliate-product-card.tsx
+  - `ShoppingRecommendationCard` - displays AI-suggested items to buy
+  - `ShoppingRecommendationsList` - section with all recommendations
+  - Show Amazon/Google shopping buttons for each
+  - Include price range badge
+  - Show reasoning for why item was suggested
+
+- [x] ClaudeProvider and AIService methods
+  - `generateShoppingRecommendations()` in both provider and service
+  - Includes user profile for personalization
+  - Supports budget preference (budget/moderate/premium/luxury)
+
+### UI Changes
+
+- Outfit Builder: Mode toggle with "My Closet" and "Shop New" buttons
+- AI button icon changes based on selected mode (sparkles vs bag)
+- AI button label changes ("AI" vs "Shop")
+- Shopping results displayed in full-screen modal
+
+---
+
+## Phase 8: Seamless AI Integration & Natural Language Search
+
+Unify the shopping and closet AI experience at the item selection level, and add natural language outfit building.
+
+### Requirements
+
+#### 8A: Three-Way Item Selection
+
+When user taps a category slot (e.g., "Top" or "Shoes") in outfit builder, show a bottom sheet with three options:
+
+- [ ] **"Browse Closet"** - Opens existing item picker modal
+  - Shows user's items in that category
+  - Current behavior, unchanged
+
+- [ ] **"Suggest from Closet"** - AI suggests items from wardrobe
+  - AI analyzes current outfit context + user profile
+  - Returns ranked list of items from user's closet that would pair well
+  - Shows reasoning for each suggestion ("This navy polo complements your khaki pants")
+  - User can tap to add or dismiss suggestions
+  - No affiliate links - pure styling advice
+
+- [ ] **"Find Something New"** - AI suggests items to buy
+  - AI suggests what type of item would work
+  - Returns description, colors, style (not affiliate-focused)
+  - Optional: "Search for this" button opens web search
+  - Prioritize good suggestions over monetization
+  - Show as cards with item description and why it works
+
+- [ ] Bottom sheet UI with three large buttons:
+  - Icon + label for each option
+  - Purple accent for AI options
+  - Closet icon, sparkles icon, globe/search icon
+
+- [ ] New AI method: `suggestItemForSlot(category, currentItems, userProfile)`
+  - Returns closet suggestions ranked by fit
+  - Includes reasoning for each
+
+- [ ] New AI method: `suggestPurchaseForSlot(category, currentItems, userProfile)`
+  - Returns purchase suggestions (description-focused, not price-focused)
+  - Includes why this type of item would work
+
+#### 8B: Natural Language Outfit Builder
+
+Add a chat-like interface for building outfits through conversation.
+
+- [ ] **New screen: `app/(tabs)/outfits/ai-chat.tsx`**
+  - Text input field at bottom
+  - Chat-style interface showing user prompts and AI responses
+  - AI can:
+    - Build complete outfits from scratch ("build me a date night outfit")
+    - Find specific items ("find me chic pants that match my striped top")
+    - Answer styling questions ("would this work for a job interview?")
+    - Search beyond closet when needed ("I don't have anything like that - search for options")
+
+- [ ] **Dual-mode responses:**
+  - First: Search user's closet for matches
+  - If insufficient: Offer to search beyond closet
+  - Clear indication of what's from closet vs what's a purchase suggestion
+  - "From your closet" badge vs "Shopping suggestion" badge
+
+- [ ] **Conversation context:**
+  - Maintains context of current outfit being built
+  - Shows outfit preview that updates as items are added
+  - Can reference previous items ("something that goes with that")
+
+- [ ] **Example interactions:**
+  ```
+  User: "Build me an outfit that's suitable for a date"
+  AI: [Shows outfit from closet items]
+      "Here's a date-ready look from your closet:
+       - Your black slim jeans (versatile base)
+       - The burgundy henley (flattering color for your skin tone)
+       - Brown leather boots
+       This creates a smart-casual vibe that's relaxed but put-together."
+
+  User: "Find me chic pants that match my top"
+  [User has a floral blouse selected]
+  AI: "From your closet, these would pair well:
+       - Navy high-waisted trousers (picks up the navy in the floral)
+       - White wide-leg pants (clean contrast)
+
+       If you're looking to shop, consider:
+       - Olive green cigarette pants (earth tone to ground the floral)
+       - Camel culottes (warm neutral, very on-trend)"
+
+  User: "I need something more formal"
+  AI: "Let me upgrade the look:
+       - Swap to your charcoal dress pants
+       - Add your navy blazer
+       - The pointed-toe heels instead of boots"
+  ```
+
+- [ ] **New AI method: `processNaturalLanguageRequest(prompt, currentOutfit, closetItems, userProfile)`**
+  - Returns: suggested items (closet or purchase), reasoning, follow-up questions if needed
+  - Maintains conversation context
+
+- [ ] **Quick actions:**
+  - Suggested prompts as chips: "Date night", "Work outfit", "Weekend casual"
+  - "Search web for this" button on purchase suggestions
+  - "Add to outfit" button on closet suggestions
+  - "Save outfit" when happy with result
+
+#### 8C: Unified Search
+
+- [ ] **Single search bar on closet screen** that works for:
+  - Finding items in closet ("navy pants")
+  - AI suggestions ("something to go with my red dress")
+  - Detected as AI query if it includes context words ("to go with", "that matches", "for a")
+
+- [ ] **Smart query detection:**
+  - Simple terms → filter closet items
+  - Contextual phrases → trigger AI suggestions
+  - "find me..." or "suggest..." → explicit AI mode
+
+### UI Changes
+
+- Outfit Builder: Category slots tap → bottom sheet with 3 options
+- New "Chat" button in outfits tab → natural language screen
+- Closet search bar enhanced with AI detection
+
+### Files to Create/Modify
+
+**New files:**
+- `app/(tabs)/outfits/ai-chat.tsx` - Natural language outfit builder
+- `app/components/item-selection-sheet.tsx` - Bottom sheet with 3 options
+- `app/components/chat-message.tsx` - Chat bubble component
+- `app/components/suggestion-card.tsx` - Unified card for closet/purchase suggestions
+
+**Modified files:**
+- `app/components/outfit-builder.tsx` - Replace direct picker with bottom sheet
+- `app/services/ai/ai-service.ts` - Add new methods
+- `app/services/ai/claude-provider.ts` - Add new provider methods
+- `app/services/ai/prompts.ts` - Add new prompt templates
+- `app/(tabs)/closet/index.tsx` - Smart search bar
+
+### Philosophy
+
+- **Suggestions first, shopping second** - AI should help users style what they have
+- **No aggressive monetization** - Shopping suggestions are helpful, not pushy
+- **Seamless experience** - User shouldn't have to think about "modes"
+- **Natural interaction** - Chat feels like talking to a stylist friend
+
+---
+
 ## Testing
 
 ```bash
-npm test                    # Run unit tests (247 tests passing)
+npm test                    # Run unit tests (601 tests passing)
 npm run lint               # Run linter
 npm start                  # Manual testing in simulator
 ```

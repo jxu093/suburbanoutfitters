@@ -1,11 +1,12 @@
-import type { AIAnalysisResult, AIOutfitSuggestion } from '../../types';
-import type { AIProvider, AIResponse, InspirationMatch, ItemSummary, OutfitContext } from './ai-provider';
+import type { AIAnalysisResult, AIOutfitSuggestion, AIShoppingRecommendations } from '../../types';
+import type { AIProvider, AIResponse, InspirationMatch, ItemSummary, OutfitContext, ShoppingContext } from './ai-provider';
 import { AIProviderError } from './ai-provider';
 import {
   ITEM_ANALYSIS_PROMPT,
   buildOutfitPrompt,
   buildInspirationPrompt,
   buildPairingPrompt,
+  buildShoppingRecommendationPrompt,
 } from './prompts';
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -170,5 +171,20 @@ export class ClaudeProvider implements AIProvider {
     ]);
 
     return this.parseJSON<number[]>(response.content);
+  }
+
+  async generateShoppingRecommendations(
+    context: ShoppingContext
+  ): Promise<AIShoppingRecommendations> {
+    const prompt = buildShoppingRecommendationPrompt(context);
+
+    const response = await this.callAPI([
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ]);
+
+    return this.parseJSON<AIShoppingRecommendations>(response.content);
   }
 }
