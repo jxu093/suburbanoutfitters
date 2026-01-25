@@ -10,7 +10,7 @@ import type {
   AIOutfitSuggestion,
   AIProviderName,
   AIProviderConfig,
-} from '../app/types';
+} from '../types';
 
 describe('AI Types', () => {
   describe('AIItemAttributes', () => {

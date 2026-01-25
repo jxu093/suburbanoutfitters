@@ -30,7 +30,7 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   return (props: any) => <View testID={`icon-${props.name}`} {...props} />;
 });
 
-jest.mock('../app/hooks/use-items', () => ({
+jest.mock('../hooks/use-items', () => ({
   useItems: () => ({
     items: [],
     update: mockUpdate,
@@ -38,20 +38,20 @@ jest.mock('../app/hooks/use-items', () => ({
   }),
 }));
 
-jest.mock('../app/components/toast', () => ({
+jest.mock('../components/toast', () => ({
   useToast: () => ({
     showToast: mockShowToast,
   }),
 }));
 
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
   },
 }));
 
-jest.mock('../app/components/themed-view', () => ({
+jest.mock('../components/themed-view', () => ({
   ThemedView: ({ children, ...props }: any) => {
     const { View } = require('react-native');
     return <View {...props}>{children}</View>;
@@ -64,8 +64,8 @@ describe('ItemCard favorite button integration', () => {
   });
 
   test('clicking favorite button calls update with correct tags', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     const item = {
       id: 1,
@@ -99,8 +99,8 @@ describe('ItemCard favorite button integration', () => {
   });
 
   test('clicking favorite button on favorited item removes favorite', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     const item = {
       id: 1,

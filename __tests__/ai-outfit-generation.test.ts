@@ -1,6 +1,6 @@
-import { buildOutfitPrompt, buildPairingPrompt } from '../app/services/ai/prompts';
-import type { OutfitContext, ItemSummary } from '../app/services/ai/ai-provider';
-import type { UserProfile } from '../app/types';
+import { buildOutfitPrompt, buildPairingPrompt } from '../services/ai/prompts';
+import type { OutfitContext, ItemSummary } from '../services/ai/ai-provider';
+import type { UserProfile } from '../types';
 
 describe('AI Outfit Generation Prompts', () => {
   const mockItems: ItemSummary[] = [

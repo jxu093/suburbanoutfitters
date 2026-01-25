@@ -65,7 +65,7 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn().mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///tmp/cam.jpg' }] }),
 }));
 
-import { SavedImage } from '../app/services/image-service';
+import { SavedImage } from '../services/image-service';
 
 describe('image-service image processing', () => {
   beforeEach(() => {
@@ -73,7 +73,7 @@ describe('image-service image processing', () => {
   });
 
   test('processAndSaveImageAsync saves resized image and thumbnail', async () => {
-    const imageService = require('../app/services/image-service');
+    const imageService = require('../services/image-service');
 
     const result: SavedImage = await imageService.processAndSaveImageAsync('file:///tmp/input.jpg');
 
@@ -83,7 +83,7 @@ describe('image-service image processing', () => {
   });
 
   test('pickAndSaveFromLibrary uses image-picker', async () => {
-    const imageService = require('../app/services/image-service');
+    const imageService = require('../services/image-service');
 
     const picked = await imageService.pickAndSaveFromLibrary();
     expect(picked).not.toBeNull();

@@ -1,9 +1,9 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import type { AIItemAttributes } from '../app/types';
+import type { AIItemAttributes } from '../types';
 
 // Mock dependencies before importing the component
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
@@ -11,7 +11,7 @@ jest.mock('../app/components/themed-text', () => ({
 }));
 
 // Now import the component
-import { AIAttributeTags } from '../app/components/ai-attribute-tags';
+import { AIAttributeTags } from '../components/ai-attribute-tags';
 
 describe('AIAttributeTags', () => {
   describe('rendering', () => {

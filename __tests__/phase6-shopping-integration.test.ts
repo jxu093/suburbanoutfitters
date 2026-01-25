@@ -5,8 +5,8 @@
  * deep linking, and shopping integration in AI features.
  */
 
-import { affiliateService } from '../app/services/affiliate/affiliate-service';
-import type { ProductSearchParams } from '../app/services/affiliate/affiliate-service';
+import { affiliateService } from '../services/affiliate/affiliate-service';
+import type { ProductSearchParams } from '../services/affiliate/affiliate-service';
 
 describe('Phase 6: Shopping Integration', () => {
   describe('AffiliateService', () => {

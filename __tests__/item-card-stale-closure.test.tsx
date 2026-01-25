@@ -32,7 +32,7 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   return (props: any) => <View testID={`icon-${props.name}`} {...props} />;
 });
 
-jest.mock('../app/hooks/use-items', () => ({
+jest.mock('../hooks/use-items', () => ({
   useItems: () => ({
     items: [],
     update: mockUpdate,
@@ -40,20 +40,20 @@ jest.mock('../app/hooks/use-items', () => ({
   }),
 }));
 
-jest.mock('../app/components/toast', () => ({
+jest.mock('../components/toast', () => ({
   useToast: () => ({
     showToast: jest.fn(),
   }),
 }));
 
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
   },
 }));
 
-jest.mock('../app/components/themed-view', () => ({
+jest.mock('../components/themed-view', () => ({
   ThemedView: ({ children, ...props }: any) => {
     const { View } = require('react-native');
     return <View {...props}>{children}</View>;
@@ -67,8 +67,8 @@ describe('ItemCard stale closure bug', () => {
   });
 
   test('FAILS: clicking favorite twice uses stale isFavorite value', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     // Start with non-favorited item
     let currentItem = {
@@ -127,8 +127,8 @@ describe('ItemCard stale closure bug', () => {
   });
 
   test('isFavorite should be recalculated on each render', () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     // Render with non-favorited item
     const { getByTestId, rerender } = render(

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, View, StyleSheet, Button, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ThemedText } from '../../../app/components/themed-text';
-import { ThemedView } from '../../../app/components/themed-view';
-import OutfitPreview from '../../../app/components/outfit-preview';
-import { useOutfits } from '../../../app/hooks/use-outfits';
-import { useItems } from '../../../app/hooks/use-items';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import OutfitPreview from '@/components/outfit-preview';
+import { useOutfits } from '@/hooks/use-outfits';
+import { useItems } from '@/hooks/use-items';
 
 export default function OutfitScreen() {
   const params = useLocalSearchParams();

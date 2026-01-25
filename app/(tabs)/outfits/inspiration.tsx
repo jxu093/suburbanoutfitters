@@ -10,17 +10,18 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import { ShopMissingItems } from '../../components/affiliate-product-card';
-import { ThemedText } from '../../components/themed-text';
-import { ThemedView } from '../../components/themed-view';
-import { useToast } from '../../components/toast';
-import { Colors, Radii, Shadows, Spacing } from '../../constants/theme';
-import { useItems } from '../../hooks/use-items';
-import { useOutfits } from '../../hooks/use-outfits';
-import { aiService } from '../../services/ai';
-import type { InspirationMatch } from '../../services/ai/ai-provider';
-import { pickFromLibraryAsync, resizeForAIAnalysis } from '../../services/image-service';
-import type { Item } from '../../types';
+import { ShopMissingItems } from '@/components/affiliate-product-card';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
+import { useItems } from '@/hooks/use-items';
+import { useOutfits } from '@/hooks/use-outfits';
+import { aiService } from '@/services/ai';
+import type { InspirationMatch } from '@/services/ai/ai-provider';
+import { pickFromLibraryAsync, resizeForAIAnalysis } from '@/services/image-service';
+import type { Item } from '@/types';
+import { getItemImageUri } from '@/utils/item-helpers';
 
 export default function InspirationScreen() {
   const router = useRouter();
@@ -177,7 +178,7 @@ export default function InspirationScreen() {
                   {matchedItems.slice(0, 4).map((item, index) => (
                     <View key={item.id} style={styles.matchedItemWrapper}>
                       <Image
-                        source={{ uri: item.thumbUri || item.imageUri || '' }}
+                        source={{ uri: getItemImageUri(item) }}
                         style={styles.matchedItem}
                         contentFit="cover"
                       />
@@ -277,7 +278,7 @@ export default function InspirationScreen() {
                       style={[styles.itemCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
                     >
                       <Image
-                        source={{ uri: item.thumbUri || item.imageUri || '' }}
+                        source={{ uri: getItemImageUri(item) }}
                         style={styles.itemImage}
                         contentFit="cover"
                       />

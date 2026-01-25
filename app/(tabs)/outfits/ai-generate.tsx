@@ -12,17 +12,18 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import { ShopSimilarButton } from '../../components/affiliate-product-card';
-import { ThemedText } from '../../components/themed-text';
-import { ThemedView } from '../../components/themed-view';
-import { useToast } from '../../components/toast';
-import { Colors, Radii, Shadows, Spacing } from '../../constants/theme';
-import { useItems } from '../../hooks/use-items';
-import { useOutfits } from '../../hooks/use-outfits';
-import { aiService } from '../../services/ai';
-import { createOutfitFeedback, getUserProfile, saveUserProfile, incrementProfileFeedbackCount } from '../../services/storage';
-import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '../../services/weather';
-import type { AIOutfitSuggestion, Item, Outfit, UserProfile } from '../../types';
+import { ShopSimilarButton } from '@/components/affiliate-product-card';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
+import { useItems } from '@/hooks/use-items';
+import { useOutfits } from '@/hooks/use-outfits';
+import { aiService } from '@/services/ai';
+import { createOutfitFeedback, getUserProfile, saveUserProfile, incrementProfileFeedbackCount } from '@/services/storage';
+import { getCurrentWeather, isWeatherApiConfigured, type WeatherData } from '@/services/weather';
+import type { AIOutfitSuggestion, Item, Outfit, UserProfile } from '@/types';
+import { getItemImageUri } from '@/utils/item-helpers';
 
 // Occasion options
 const OCCASIONS = [
@@ -354,7 +355,7 @@ export default function AIGenerateScreen() {
                 {suggestedItems.map((item) => (
                   <View key={item.id} style={styles.outfitItemWrap}>
                     <Image
-                      source={{ uri: item.thumbUri ?? item.imageUri ?? undefined }}
+                      source={{ uri: getItemImageUri(item) }}
                       style={styles.outfitItemImage}
                     />
                     <ThemedText
@@ -438,7 +439,7 @@ export default function AIGenerateScreen() {
                 {suggestedItems.map((item) => (
                   <View key={item.id} style={[styles.shopItem, { borderColor: colors.border }]}>
                     <Image
-                      source={{ uri: item.thumbUri ?? item.imageUri ?? undefined }}
+                      source={{ uri: getItemImageUri(item) }}
                       style={styles.shopItemImage}
                     />
                     <ThemedText numberOfLines={1} style={styles.shopItemName}>{item.name}</ThemedText>

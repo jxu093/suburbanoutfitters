@@ -2,15 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
-import ItemGrid from '../../../app/components/item-grid';
-import { ThemedButton } from '../../../app/components/themed-button';
-import { ThemedChip } from '../../../app/components/themed-chip';
-import { ThemedText } from '../../../app/components/themed-text';
-import { ThemedView } from '../../../app/components/themed-view';
-import { isListTag, getListDisplayName, LIST_TAGS } from '../../../app/constants';
-import { Colors, Radii, Spacing } from '../../../app/constants/theme';
-import { useItems } from '../../../app/hooks/use-items';
-import { isItemHidden } from '../../../app/utils/item-helpers';
+import ItemGrid from '@/components/item-grid';
+import { ThemedButton } from '@/components/themed-button';
+import { ThemedChip } from '@/components/themed-chip';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { isListTag, getListDisplayName, LIST_TAGS } from '@/constants';
+import { Colors, Radii, Spacing } from '@/constants/theme';
+import { useItems } from '@/hooks/use-items';
+import { isItemHidden } from '@/utils/item-helpers';
 
 function showIconLegend() {
   Alert.alert(

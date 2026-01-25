@@ -29,5 +29,6 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
     '^.+/constants/theme$': '<rootDir>/__mocks__/theme.js',
+    '^@/(.*)$': '<rootDir>/$1',
   },
 };

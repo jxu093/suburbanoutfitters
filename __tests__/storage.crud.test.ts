@@ -82,7 +82,7 @@ describe('storage CRUD and hiddenUntil behavior', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
 
     // initDB should run and not throw
     await expect(storage.initDB()).resolves.not.toThrow();

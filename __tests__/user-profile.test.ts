@@ -1,5 +1,5 @@
-import { formatUserProfileForPrompt, getSkinToneColorRecommendations } from '../app/services/ai/prompts';
-import type { UserProfile } from '../app/types';
+import { formatUserProfileForPrompt, getSkinToneColorRecommendations } from '../services/ai/prompts';
+import type { UserProfile } from '../types';
 
 // Need to export the helper functions for testing
 // For now we'll test the prompt building behavior indirectly

@@ -5,10 +5,10 @@
  * prompt generation, and outfit suggestion handling.
  */
 
-import type { AIOutfitSuggestion, UserProfile, OutfitFeedback } from '../app/types';
-import type { ItemSummary, OutfitContext } from '../app/services/ai/ai-provider';
-import { buildOutfitPrompt, buildPairingPrompt } from '../app/services/ai/prompts';
-import { ClaudeProvider } from '../app/services/ai/claude-provider';
+import type { AIOutfitSuggestion, UserProfile, OutfitFeedback } from '../types';
+import type { ItemSummary, OutfitContext } from '../services/ai/ai-provider';
+import { buildOutfitPrompt, buildPairingPrompt } from '../services/ai/prompts';
+import { ClaudeProvider } from '../services/ai/claude-provider';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();

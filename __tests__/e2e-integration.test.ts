@@ -15,12 +15,12 @@ import type {
   AIAnalysisResult,
   AIOutfitSuggestion,
   OutfitFeedback,
-} from '../app/types';
-import type { InspirationMatch, ItemSummary, OutfitContext } from '../app/services/ai/ai-provider';
-import { itemToSummary, AIProviderError } from '../app/services/ai/ai-provider';
-import { ClaudeProvider } from '../app/services/ai/claude-provider';
-import { buildOutfitPrompt, buildInspirationPrompt, ITEM_ANALYSIS_PROMPT } from '../app/services/ai/prompts';
-import { affiliateService } from '../app/services/affiliate/affiliate-service';
+} from '../types';
+import type { InspirationMatch, ItemSummary, OutfitContext } from '../services/ai/ai-provider';
+import { itemToSummary, AIProviderError } from '../services/ai/ai-provider';
+import { ClaudeProvider } from '../services/ai/claude-provider';
+import { buildOutfitPrompt, buildInspirationPrompt, ITEM_ANALYSIS_PROMPT } from '../services/ai/prompts';
+import { affiliateService } from '../services/affiliate/affiliate-service';
 
 // Mock fetch for all API calls
 const mockFetch = jest.fn();

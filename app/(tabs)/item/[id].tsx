@@ -14,10 +14,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { AIAttributeTags } from '../../../app/components/ai-attribute-tags';
-import { ThemedText } from '../../../app/components/themed-text';
-import { ThemedView } from '../../../app/components/themed-view';
-import { useToast } from '../../../app/components/toast';
+import { AIAttributeTags } from '@/components/ai-attribute-tags';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
 import {
   CATEGORIES,
   getCategoryDisplayName,
@@ -25,10 +25,10 @@ import {
   isListTag,
   getListDisplayName,
   createListTag,
-} from '../../../app/constants';
-import { useItems } from '../../../app/hooks/use-items';
-import { aiService } from '../../../app/services/ai';
-import { resizeForAIAnalysis } from '../../../app/services/image-service';
+} from '@/constants';
+import { useItems } from '@/hooks/use-items';
+import { aiService } from '@/services/ai';
+import { resizeForAIAnalysis } from '@/services/image-service';
 
 export default function ItemScreen() {
   const params = useLocalSearchParams();

@@ -69,7 +69,7 @@ describe('outfits storage simple CRUD', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
 
     const id = await storage.createOutfit({ name: 'Test Outfit', itemIds: JSON.stringify([1, 2]) } as any);
     expect(typeof id).toBe('number');

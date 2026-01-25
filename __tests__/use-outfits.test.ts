@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useOutfits } from '../app/hooks/use-outfits';
-import * as storage from '../app/services/storage';
-import type { Outfit } from '../app/types';
+import { useOutfits } from '../hooks/use-outfits';
+import * as storage from '../services/storage';
+import type { Outfit } from '../types';
 
 // Mock expo-sqlite with a minimal in-memory implementation
 jest.mock('expo-sqlite', () => ({

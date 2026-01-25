@@ -1,4 +1,4 @@
-import type { Item, Outfit } from '../app/types';
+import type { Item, Outfit } from '../types';
 
 // Shared mock items for testing
 export const mockItems: Item[] = [

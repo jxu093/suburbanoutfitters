@@ -5,10 +5,10 @@
  * Covers: ClaudeProvider, AI prompts, image analysis, attribute extraction.
  */
 
-import type { AIAnalysisResult, Item } from '../app/types';
-import { itemToSummary, AIProviderError } from '../app/services/ai/ai-provider';
-import { ClaudeProvider } from '../app/services/ai/claude-provider';
-import { ITEM_ANALYSIS_PROMPT } from '../app/services/ai/prompts';
+import type { AIAnalysisResult, Item } from '../types';
+import { itemToSummary, AIProviderError } from '../services/ai/ai-provider';
+import { ClaudeProvider } from '../services/ai/claude-provider';
+import { ITEM_ANALYSIS_PROMPT } from '../services/ai/prompts';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();

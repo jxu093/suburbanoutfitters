@@ -1,5 +1,5 @@
-import type { InspirationMatch, ItemSummary } from '../app/services/ai/ai-provider';
-import { buildInspirationPrompt } from '../app/services/ai/prompts';
+import type { InspirationMatch, ItemSummary } from '../services/ai/ai-provider';
+import { buildInspirationPrompt } from '../services/ai/prompts';
 
 describe('Inspiration Matching', () => {
   describe('InspirationMatch type', () => {

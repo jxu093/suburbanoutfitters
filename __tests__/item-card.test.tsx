@@ -28,21 +28,21 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   return (props: any) => <View testID={`icon-${props.name}`} {...props} />;
 });
 
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
   },
 }));
 
-jest.mock('../app/components/themed-view', () => ({
+jest.mock('../components/themed-view', () => ({
   ThemedView: ({ children, ...props }: any) => {
     const { View } = require('react-native');
     return <View {...props}>{children}</View>;
   },
 }));
 
-jest.mock('../app/hooks/use-items', () => ({
+jest.mock('../hooks/use-items', () => ({
   useItems: () => ({
     items: mockItemsArray,
     update: mockUpdate,
@@ -50,7 +50,7 @@ jest.mock('../app/hooks/use-items', () => ({
   }),
 }));
 
-jest.mock('../app/components/toast', () => ({
+jest.mock('../components/toast', () => ({
   useToast: () => ({
     showToast: mockShowToast,
   }),
@@ -63,7 +63,7 @@ describe('ItemCard favorite functionality', () => {
   });
 
   test('renders star-outline icon when item is not favorited', () => {
-    const ItemCard = require('../app/components/item-card').default;
+    const ItemCard = require('../components/item-card').default;
 
     const item = {
       id: 1,
@@ -84,8 +84,8 @@ describe('ItemCard favorite functionality', () => {
   });
 
   test('renders filled star icon when item is favorited', () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     const item = {
       id: 1,
@@ -106,8 +106,8 @@ describe('ItemCard favorite functionality', () => {
   });
 
   test('star icon updates when items array changes', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     // Start with non-favorited item
     const initialItem = {
@@ -143,8 +143,8 @@ describe('ItemCard favorite functionality', () => {
   });
 
   test('star icon updates when item is unfavorited', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     // Start with favorited item
     const initialItem = {

@@ -34,7 +34,7 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   };
 });
 
-jest.mock('../app/hooks/use-items', () => ({
+jest.mock('../hooks/use-items', () => ({
   useItems: () => ({
     items: mockItemsArray,
     update: mockUpdate,
@@ -42,20 +42,20 @@ jest.mock('../app/hooks/use-items', () => ({
   }),
 }));
 
-jest.mock('../app/components/toast', () => ({
+jest.mock('../components/toast', () => ({
   useToast: () => ({
     showToast: mockShowToast,
   }),
 }));
 
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
   },
 }));
 
-jest.mock('../app/components/themed-view', () => ({
+jest.mock('../components/themed-view', () => ({
   ThemedView: ({ children, ...props }: any) => {
     const { View } = require('react-native');
     return <View {...props}>{children}</View>;
@@ -70,8 +70,8 @@ describe('ItemCard - Simple click test', () => {
   });
 
   test('Does clicking the star icon call update()?', async () => {
-    const ItemCard = require('../app/components/item-card').default;
-    const { LIST_TAGS } = require('../app/constants');
+    const ItemCard = require('../components/item-card').default;
+    const { LIST_TAGS } = require('../constants');
 
     const item = {
       id: 1,

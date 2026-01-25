@@ -3,15 +3,15 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Button, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import OutfitPreview from '../../components/outfit-preview';
-import { ThemedText } from '../../components/themed-text';
-import { ThemedView } from '../../components/themed-view';
-import { useToast } from '../../components/toast';
-import { useItems } from '../../hooks/use-items';
-import { useOutfits } from '../../hooks/use-outfits';
-import { pickRandomOutfit, WeatherCondition } from '../../services/randomizer';
-import { getCurrentWeather, isWeatherApiConfigured, mapTempToCondition } from '../../services/weather';
-import { Item, Outfit } from '../../types';
+import OutfitPreview from '@/components/outfit-preview';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { useItems } from '@/hooks/use-items';
+import { useOutfits } from '@/hooks/use-outfits';
+import { pickRandomOutfit, WeatherCondition } from '@/services/randomizer';
+import { getCurrentWeather, isWeatherApiConfigured, mapTempToCondition } from '@/services/weather';
+import { Item, Outfit } from '@/types';
 
 export default function RandomOutfitScreen() {
   const router = useRouter();

@@ -15,7 +15,7 @@ jest.mock('@xenova/transformers', () => ({
   },
 }));
 
-import { categorizeClothesByImage, isAiCategorizationAvailable } from '../app/services/ai-categorization';
+import { categorizeClothesByImage, isAiCategorizationAvailable } from '../services/ai-categorization';
 
 describe('AI Categorization (Disabled in React Native)', () => {
   test('categorizeClothesByImage returns null when disabled', async () => {

@@ -1,10 +1,10 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
-import { ThemedText } from './components/themed-text';
-import { ThemedView } from './components/themed-view';
-import { seedSampleItems } from './services/seed';
-import { initDB } from './services/storage';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { seedSampleItems } from '@/services/seed';
+import { initDB } from '@/services/storage';
 
 export default function SplashScreen() {
   const [ready, setReady] = useState(false);

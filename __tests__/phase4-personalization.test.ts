@@ -5,9 +5,9 @@
  * recommendations, and feedback-based learning.
  */
 
-import type { UserProfile, OutfitFeedback } from '../app/types';
-import { buildOutfitPrompt } from '../app/services/ai/prompts';
-import type { OutfitContext } from '../app/services/ai/ai-provider';
+import type { UserProfile, OutfitFeedback } from '../types';
+import { buildOutfitPrompt } from '../services/ai/prompts';
+import type { OutfitContext } from '../services/ai/ai-provider';
 
 describe('Phase 4: User Profile & Personalization', () => {
   describe('UserProfile - Physical Attributes', () => {
@@ -585,7 +585,7 @@ describe('Phase 4: Profile Storage', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
     await storage.initDB();
 
     await storage.saveUserProfile({
@@ -638,7 +638,7 @@ describe('Phase 4: Profile Storage', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
     await storage.initDB();
 
     // Simulate incrementing

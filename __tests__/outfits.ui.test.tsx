@@ -12,7 +12,7 @@ jest.mock('expo-router', () => ({
   Link: ({ children }: any) => children,
 }));
 
-jest.mock('../app/hooks/use-outfits', () => ({
+jest.mock('../hooks/use-outfits', () => ({
   useOutfits: () => ({
     outfits: [{ id: 1, name: 'Test Outfit', itemIds: [1], notes: '', createdAt: Date.now() }],
     loading: false,
@@ -23,7 +23,7 @@ jest.mock('../app/hooks/use-outfits', () => ({
   }),
 }));
 
-jest.mock('../app/hooks/use-items', () => ({
+jest.mock('../hooks/use-items', () => ({
   useItems: () => ({
     items: [
       { id: 1, name: 'Shirt' },
@@ -39,7 +39,7 @@ jest.mock('../app/hooks/use-items', () => ({
 jest.mock('expo-image', () => ({ Image: (props: any) => null }));
 
 // Provide a minimal theme mock
-jest.mock('../app/constants/theme', () => ({
+jest.mock('../constants/theme', () => ({
   Colors: {
     light: { text: '#000', background: '#fff', tint: '#0a7ea4', icon: '#000', tabIconDefault: '#000', tabIconSelected: '#0a7ea4' },
     dark: { text: '#fff', background: '#000', tint: '#fff', icon: '#fff', tabIconDefault: '#fff', tabIconSelected: '#fff' },
@@ -48,13 +48,13 @@ jest.mock('../app/constants/theme', () => ({
 }));
 
 // Mock ThemedText and ThemedView
-jest.mock('../app/components/themed-text', () => ({
+jest.mock('../components/themed-text', () => ({
   ThemedText: ({ children, ...props }: any) => {
     const { Text } = require('react-native');
     return <Text {...props}>{children}</Text>;
   },
 }));
-jest.mock('../app/components/themed-view', () => ({
+jest.mock('../components/themed-view', () => ({
   ThemedView: ({ children, ...props }: any) => {
     const { View } = require('react-native');
     return <View {...props}>{children}</View>;

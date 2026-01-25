@@ -1,13 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
-import OutfitCard from '../../../app/components/outfit-card';
-import { ThemedText } from '../../../app/components/themed-text';
-import { ThemedView } from '../../../app/components/themed-view';
-import { useToast } from '../../../app/components/toast';
-import { useItems } from '../../../app/hooks/use-items';
-import { useOutfits } from '../../../app/hooks/use-outfits';
-import { pickRandomOutfit } from '../../../app/services/randomizer';
+import OutfitCard from '@/components/outfit-card';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { useItems } from '@/hooks/use-items';
+import { useOutfits } from '@/hooks/use-outfits';
+import { pickRandomOutfit } from '@/services/randomizer';
 
 export default function OutfitsListScreen() {
   const router = useRouter();

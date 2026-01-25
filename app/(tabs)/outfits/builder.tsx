@@ -1,4 +1,4 @@
-import OutfitBuilder from '../../../app/components/outfit-builder';
+import OutfitBuilder from '@/components/outfit-builder';
 
 export default function OutfitBuilderScreen() {
   return <OutfitBuilder />;

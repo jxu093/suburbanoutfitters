@@ -1,7 +1,7 @@
-import type { AIAnalysisResult, AIOutfitSuggestion, Item } from '../app/types';
-import { itemToSummary, AIProviderError } from '../app/services/ai/ai-provider';
-import { ClaudeProvider } from '../app/services/ai/claude-provider';
-import { buildOutfitPrompt, buildInspirationPrompt, buildPairingPrompt } from '../app/services/ai/prompts';
+import type { AIAnalysisResult, AIOutfitSuggestion, Item } from '../types';
+import { itemToSummary, AIProviderError } from '../services/ai/ai-provider';
+import { ClaudeProvider } from '../services/ai/claude-provider';
+import { buildOutfitPrompt, buildInspirationPrompt, buildPairingPrompt } from '../services/ai/prompts';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();

@@ -15,7 +15,7 @@ import type {
   AIOutfitSuggestion,
   AIProviderName,
   AIProviderConfig,
-} from '../app/types';
+} from '../types';
 
 describe('Phase 1: Foundation', () => {
   describe('AIItemAttributes Type', () => {
@@ -447,7 +447,7 @@ describe('Phase 1: Storage Integration', () => {
         }),
       }));
 
-      const storage = require('../app/services/storage');
+      const storage = require('../services/storage');
       await storage.initDB();
 
       // Test set and get
@@ -466,7 +466,7 @@ describe('Phase 1: Storage Integration', () => {
         }),
       }));
 
-      const storage = require('../app/services/storage');
+      const storage = require('../services/storage');
       await storage.initDB();
 
       const value = await storage.getSetting('nonexistent');
@@ -503,7 +503,7 @@ describe('Phase 1: Storage Integration', () => {
         }),
       }));
 
-      const storage = require('../app/services/storage');
+      const storage = require('../services/storage');
       await storage.initDB();
 
       const analysisJson = JSON.stringify({ category: 'top', colors: ['blue'] });
@@ -550,7 +550,7 @@ describe('Phase 1: Storage Integration', () => {
         }),
       }));
 
-      const storage = require('../app/services/storage');
+      const storage = require('../services/storage');
       await storage.initDB();
 
       await storage.saveUserProfile({
@@ -593,7 +593,7 @@ describe('Phase 1: Storage Integration', () => {
         }),
       }));
 
-      const storage = require('../app/services/storage');
+      const storage = require('../services/storage');
       await storage.initDB();
 
       const id = await storage.createOutfitFeedback({
@@ -631,7 +631,7 @@ describe('Phase 1: Database Migrations', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
     await storage.initDB();
 
     const allSql = executedSql.join(' ');
@@ -662,7 +662,7 @@ describe('Phase 1: Database Migrations', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
     await storage.initDB();
 
     const allSql = executedSql.join(' ');

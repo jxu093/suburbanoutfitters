@@ -9,11 +9,11 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import { ThemedText } from '../../components/themed-text';
-import { ThemedView } from '../../components/themed-view';
-import { useToast } from '../../components/toast';
-import { Colors, Radii, Shadows, Spacing } from '../../constants/theme';
-import { getUserProfile, saveUserProfile } from '../../services/storage';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
+import { getUserProfile, saveUserProfile } from '@/services/storage';
 
 const STYLE_OPTIONS = [
   { id: 'minimalist', label: 'Minimalist', icon: 'remove-outline', description: 'Clean lines, neutral colors' },

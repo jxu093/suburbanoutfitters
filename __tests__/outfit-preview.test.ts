@@ -1,5 +1,5 @@
-import { categorizeItems, SilhouetteSlot } from '../app/utils/outfit-categorization';
-import type { Item } from '../app/types';
+import { categorizeItems, SilhouetteSlot } from '../utils/outfit-categorization';
+import type { Item } from '../types';
 
 // Helper to create test items
 function createItem(overrides: Partial<Item> = {}): Item {

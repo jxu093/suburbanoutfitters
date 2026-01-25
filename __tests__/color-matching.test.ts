@@ -9,7 +9,7 @@ import {
   calculateColorCompatibility,
   calculateOutfitColorHarmony,
   filterColorCompatibleItems,
-} from '../app/utils/color-matching';
+} from '../utils/color-matching';
 
 describe('Color Matching Utilities', () => {
   describe('extractColors', () => {

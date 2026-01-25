@@ -1,9 +1,9 @@
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useItems } from '../app/hooks/use-items';
-import { ItemsProvider } from '../app/contexts/items-context';
-import * as storage from '../app/services/storage';
-import type { Item } from '../app/types';
+import { useItems } from '../hooks/use-items';
+import { ItemsProvider } from '../contexts/items-context';
+import * as storage from '../services/storage';
+import type { Item } from '../types';
 
 // Wrapper to provide ItemsContext
 const wrapper = ({ children }: { children: React.ReactNode }) => (

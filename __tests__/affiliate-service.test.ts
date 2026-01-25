@@ -1,5 +1,5 @@
-import { affiliateService } from '../app/services/affiliate/affiliate-service';
-import type { ProductSearchParams } from '../app/services/affiliate/affiliate-service';
+import { affiliateService } from '../services/affiliate/affiliate-service';
+import type { ProductSearchParams } from '../services/affiliate/affiliate-service';
 
 describe('Affiliate Service', () => {
   describe('buildSearchQuery', () => {

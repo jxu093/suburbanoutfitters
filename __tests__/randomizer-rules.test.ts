@@ -2,8 +2,8 @@
  * Tests for rule-based outfit generation
  */
 
-import { pickRandomOutfit, scoreOutfit, DEFAULT_OPTIONS, SMART_OPTIONS, getTempCategory } from '../app/services/randomizer';
-import type { Item } from '../app/types';
+import { pickRandomOutfit, scoreOutfit, DEFAULT_OPTIONS, SMART_OPTIONS, getTempCategory } from '../services/randomizer';
+import type { Item } from '../types';
 
 // Mock items for testing
 const mockItems: Item[] = [

@@ -7,7 +7,7 @@ import {
   createListTag,
   LIST_TAG_PREFIX,
   Category,
-} from '../app/constants';
+} from '../constants';
 
 describe('CATEGORIES', () => {
   test('contains all expected categories', () => {

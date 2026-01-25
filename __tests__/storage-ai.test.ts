@@ -132,7 +132,7 @@ describe('AI Storage Functions - Integration test with in-memory mock', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
 
     // Initialize DB
     await storage.initDB();
@@ -196,7 +196,7 @@ describe('Database Migrations', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
     await storage.initDB();
 
     const allSql = execCalls.join(' ');

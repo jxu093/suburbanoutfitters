@@ -342,46 +342,46 @@ Unify the shopping and closet AI experience at the item selection level, and add
 
 ### Requirements
 
-#### 8A: Three-Way Item Selection
+#### 8A: Three-Way Item Selection ✅ COMPLETE
 
 When user taps a category slot (e.g., "Top" or "Shoes") in outfit builder, show a bottom sheet with three options:
 
-- [ ] **"Browse Closet"** - Opens existing item picker modal
+- [x] **"Browse Closet"** - Opens existing item picker modal
   - Shows user's items in that category
   - Current behavior, unchanged
 
-- [ ] **"Suggest from Closet"** - AI suggests items from wardrobe
+- [x] **"Suggest from Closet"** - AI suggests items from wardrobe
   - AI analyzes current outfit context + user profile
   - Returns ranked list of items from user's closet that would pair well
   - Shows reasoning for each suggestion ("This navy polo complements your khaki pants")
   - User can tap to add or dismiss suggestions
   - No affiliate links - pure styling advice
 
-- [ ] **"Find Something New"** - AI suggests items to buy
+- [x] **"Find Something New"** - AI suggests items to buy
   - AI suggests what type of item would work
   - Returns description, colors, style (not affiliate-focused)
   - Optional: "Search for this" button opens web search
   - Prioritize good suggestions over monetization
   - Show as cards with item description and why it works
 
-- [ ] Bottom sheet UI with three large buttons:
+- [x] Bottom sheet UI with three large buttons:
   - Icon + label for each option
   - Purple accent for AI options
   - Closet icon, sparkles icon, globe/search icon
 
-- [ ] New AI method: `suggestItemForSlot(category, currentItems, userProfile)`
+- [x] New AI method: `suggestItemForSlot(category, currentItems, userProfile)`
   - Returns closet suggestions ranked by fit
   - Includes reasoning for each
 
-- [ ] New AI method: `suggestPurchaseForSlot(category, currentItems, userProfile)`
+- [x] New AI method: `suggestPurchaseForSlot(category, currentItems, userProfile)`
   - Returns purchase suggestions (description-focused, not price-focused)
   - Includes why this type of item would work
 
-#### 8B: Natural Language Outfit Builder
+#### 8B: Natural Language Outfit Builder ✅ COMPLETE
 
 Add a chat-like interface for building outfits through conversation.
 
-- [ ] **New screen: `app/(tabs)/outfits/ai-chat.tsx`**
+- [x] **New screen: `app/(tabs)/outfits/ai-chat.tsx`**
   - Text input field at bottom
   - Chat-style interface showing user prompts and AI responses
   - AI can:
@@ -390,18 +390,18 @@ Add a chat-like interface for building outfits through conversation.
     - Answer styling questions ("would this work for a job interview?")
     - Search beyond closet when needed ("I don't have anything like that - search for options")
 
-- [ ] **Dual-mode responses:**
+- [x] **Dual-mode responses:**
   - First: Search user's closet for matches
   - If insufficient: Offer to search beyond closet
   - Clear indication of what's from closet vs what's a purchase suggestion
   - "From your closet" badge vs "Shopping suggestion" badge
 
-- [ ] **Conversation context:**
+- [x] **Conversation context:**
   - Maintains context of current outfit being built
   - Shows outfit preview that updates as items are added
   - Can reference previous items ("something that goes with that")
 
-- [ ] **Example interactions:**
+- [x] **Example interactions:**
   ```
   User: "Build me an outfit that's suitable for a date"
   AI: [Shows outfit from closet items]
@@ -428,11 +428,11 @@ Add a chat-like interface for building outfits through conversation.
        - The pointed-toe heels instead of boots"
   ```
 
-- [ ] **New AI method: `processNaturalLanguageRequest(prompt, currentOutfit, closetItems, userProfile)`**
+- [x] **New AI method: `processNaturalLanguageRequest(prompt, currentOutfit, closetItems, userProfile)`**
   - Returns: suggested items (closet or purchase), reasoning, follow-up questions if needed
   - Maintains conversation context
 
-- [ ] **Quick actions:**
+- [x] **Quick actions:**
   - Suggested prompts as chips: "Date night", "Work outfit", "Weekend casual"
   - "Search web for this" button on purchase suggestions
   - "Add to outfit" button on closet suggestions

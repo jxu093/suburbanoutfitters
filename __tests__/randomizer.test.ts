@@ -1,4 +1,4 @@
-import { pickRandomOutfit } from '../app/services/randomizer';
+import { pickRandomOutfit } from '../services/randomizer';
 
 describe('randomizer', () => {
   const sampleItems = [
@@ -19,7 +19,7 @@ describe('randomizer', () => {
     const out = pickRandomOutfit(sampleItems as any, { minItems: 3, maxItems: 4, avoidSameCategory: true });
     // Note: This test uses old sample data with non-normalized categories
     // The randomizer now uses normalized categories, so we need to check normalized values
-    const { normalizeCategory } = require('../app/constants');
+    const { normalizeCategory } = require('../constants');
     const normalizedCats = out.map((o) => normalizeCategory(o.category)).filter(Boolean);
     const unique = new Set(normalizedCats);
     expect(unique.size).toBe(normalizedCats.length);
@@ -124,7 +124,7 @@ describe('randomizer', () => {
       });
 
       // Extract normalized categories
-      const { normalizeCategory } = require('../app/constants');
+      const { normalizeCategory } = require('../constants');
       const normalizedCategories = out.map(item => normalizeCategory(item.category)).filter(Boolean);
 
       // Check that all normalized categories are unique
@@ -154,7 +154,7 @@ describe('randomizer', () => {
     });
 
     // Count how many items normalize to 'bottom'
-    const { normalizeCategory } = require('../app/constants');
+    const { normalizeCategory } = require('../constants');
     const bottomItems = out.filter(item => normalizeCategory(item.category) === 'bottom');
 
     // Should have at most 1 bottom item

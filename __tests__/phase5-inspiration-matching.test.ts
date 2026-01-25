@@ -5,9 +5,9 @@
  * identifying missing pieces, and calculating match scores.
  */
 
-import type { InspirationMatch, ItemSummary } from '../app/services/ai/ai-provider';
-import { buildInspirationPrompt } from '../app/services/ai/prompts';
-import { ClaudeProvider } from '../app/services/ai/claude-provider';
+import type { InspirationMatch, ItemSummary } from '../services/ai/ai-provider';
+import { buildInspirationPrompt } from '../services/ai/prompts';
+import { ClaudeProvider } from '../services/ai/claude-provider';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();

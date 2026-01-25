@@ -1,7 +1,7 @@
 /**
  * Test for downloading images from URLs
  */
-import { downloadAndSaveFromUrl } from '../app/services/image-service';
+import { downloadAndSaveFromUrl } from '../services/image-service';
 
 // Mock expo-file-system
 jest.mock('expo-file-system', () => {

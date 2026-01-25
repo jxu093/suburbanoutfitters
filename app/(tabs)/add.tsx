@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AIAttributeTags } from '../components/ai-attribute-tags';
-import ImagePickerComponent from '../components/image-picker';
-import { ThemedButton } from '../components/themed-button';
-import { ThemedText } from '../components/themed-text';
-import { ThemedView } from '../components/themed-view';
-import { useToast } from '../components/toast';
-import { CATEGORIES, getCategoryDisplayName } from '../constants';
-import { Colors, Radii, Spacing } from '../constants/theme';
-import { useItems } from '../hooks/use-items';
-import { categorizeClothesByImage } from '../services/ai-categorization';
-import { aiService } from '../services/ai';
-import { downloadAndSaveFromUrl, resizeForAIAnalysis } from '../services/image-service';
-import type { AIAnalysisResult } from '../types';
+import { AIAttributeTags } from '@/components/ai-attribute-tags';
+import ImagePickerComponent from '@/components/image-picker';
+import { ThemedButton } from '@/components/themed-button';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast';
+import { CATEGORIES, getCategoryDisplayName } from '@/constants';
+import { Colors, Radii, Spacing } from '@/constants/theme';
+import { useItems } from '@/hooks/use-items';
+import { categorizeClothesByImage } from '@/services/ai-categorization';
+import { aiService } from '@/services/ai';
+import { downloadAndSaveFromUrl, resizeForAIAnalysis } from '@/services/image-service';
+import type { AIAnalysisResult } from '@/types';
 
 export default function AddItemScreen() {
   const [name, setName] = useState('');

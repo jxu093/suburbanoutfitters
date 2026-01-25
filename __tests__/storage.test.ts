@@ -7,7 +7,7 @@ describe('storage.getItems / sqlite availability', () => {
     // mock expo-sqlite with no openDatabaseSync
     jest.doMock('expo-sqlite', () => ({}));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
 
     await expect(storage.getItems()).rejects.toThrow();
   });
@@ -23,7 +23,7 @@ describe('storage.getItems / sqlite availability', () => {
       }),
     }));
 
-    const storage = require('../app/services/storage');
+    const storage = require('../services/storage');
 
     await expect(storage.getItems()).resolves.toEqual([]);
   });
