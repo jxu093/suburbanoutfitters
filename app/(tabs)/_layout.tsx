@@ -108,11 +108,14 @@ export default function TabLayout() {
           href: null,
         }}
       />
-      {/* AI Chat screen */}
+      {/* AI Chat / Stylist screen */}
       <Tabs.Screen
         name="outfits/ai-chat"
         options={{
-          href: null,
+          title: 'Stylist',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'sparkles' : 'sparkles-outline'} color={color} />
+          ),
         }}
       />
     </Tabs>
