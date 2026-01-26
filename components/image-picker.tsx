@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { SavedImage, pickAndSaveFromLibrary, requestPermissions, takeAndSavePhoto } from '@/services/image-service';
+import { getValidImageUri } from '@/utils/item-helpers';
 import { ThemedButton } from './themed-button';
 import { ThemedText } from './themed-text';
 
@@ -89,7 +90,7 @@ export default function ImagePickerComponent({ onDone, showPreview, previewUri, 
 
       {loading ? <ActivityIndicator style={styles.loader} color={colors.tint} /> : null}
 
-      {showPreview && previewUri ? (
+      {showPreview && getValidImageUri(previewUri) ? (
         <View style={styles.preview}>
           <View style={styles.previewHeader}>
             <ThemedText type="headline">Image preview</ThemedText>
@@ -102,7 +103,7 @@ export default function ImagePickerComponent({ onDone, showPreview, previewUri, 
               />
             )}
           </View>
-          <Image source={{ uri: previewUri }} style={styles.thumb} />
+          <Image source={{ uri: getValidImageUri(previewUri)! }} style={styles.thumb} />
         </View>
       ) : null}
     </View>

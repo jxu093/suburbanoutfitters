@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'wardrobe.db';
-const CURRENT_DB_VERSION = 2; // Increment when adding migrations
+const CURRENT_DB_VERSION = 3; // Increment when adding migrations
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -158,8 +158,13 @@ async function runMigrations(): Promise<void> {
     await setDBVersion(2);
   }
 
+  if (currentVersion < 3) {
+    await migrateToV3();
+    await setDBVersion(3);
+  }
+
   // Add future migrations here:
-  // if (currentVersion < 3) { await migrateToV3(); await setDBVersion(3); }
+  // if (currentVersion < 4) { await migrateToV4(); await setDBVersion(4); }
 }
 
 async function migrateToV2(): Promise<void> {
@@ -236,6 +241,21 @@ async function migrateToV2(): Promise<void> {
   // Create indexes for new tables
   await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_outfit_feedback_createdAt ON outfit_feedback(createdAt);`);
   await database.execAsync(`CREATE INDEX IF NOT EXISTS idx_ai_cache_expiresAt ON ai_cache(expiresAt);`);
+}
+
+async function migrateToV3(): Promise<void> {
+  const database = getDB();
+
+  // Clean up any invalid image URIs that contain error text like "Asset not found"
+  // These can cause ImageIO errors when passed to Image components
+  await database.runAsync(
+    `UPDATE items SET imageUri = NULL WHERE imageUri LIKE '%Asset not%' OR imageUri LIKE '%Asset no%'`
+  );
+  await database.runAsync(
+    `UPDATE items SET thumbUri = NULL WHERE thumbUri LIKE '%Asset not%' OR thumbUri LIKE '%Asset no%'`
+  );
+
+  console.log('Migration V3: Cleaned up invalid image URIs');
 }
 
 export async function initDB() {

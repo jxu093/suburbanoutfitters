@@ -32,6 +32,10 @@ export function filterHiddenItems(items: Item[]): Item[] {
  */
 export function getValidImageUri(uri: string | null | undefined): string | undefined {
   if (!uri) return undefined;
+  // Filter out error text that sometimes gets stored as URIs
+  if (uri.includes('Asset not found') || uri.includes('Asset no')) {
+    return undefined;
+  }
   // A valid URI should start with a path or URL scheme
   if (uri.startsWith('/') || uri.startsWith('file://') || uri.startsWith('http://') || uri.startsWith('https://') || uri.startsWith('asset://')) {
     return uri;

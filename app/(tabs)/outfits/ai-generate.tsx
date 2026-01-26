@@ -354,10 +354,14 @@ export default function AIGenerateScreen() {
               <View style={styles.outfitGrid}>
                 {suggestedItems.map((item) => (
                   <View key={item.id} style={styles.outfitItemWrap}>
-                    <Image
-                      source={{ uri: getItemImageUri(item) }}
-                      style={styles.outfitItemImage}
-                    />
+                    {getItemImageUri(item) ? (
+                      <Image
+                        source={{ uri: getItemImageUri(item) }}
+                        style={styles.outfitItemImage}
+                      />
+                    ) : (
+                      <View style={[styles.outfitItemImage, styles.placeholder]} />
+                    )}
                     <ThemedText
                       numberOfLines={1}
                       style={[styles.outfitItemName, { color: colors.textSecondary }]}
@@ -438,10 +442,14 @@ export default function AIGenerateScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.shopScroll}>
                 {suggestedItems.map((item) => (
                   <View key={item.id} style={[styles.shopItem, { borderColor: colors.border }]}>
-                    <Image
-                      source={{ uri: getItemImageUri(item) }}
-                      style={styles.shopItemImage}
-                    />
+                    {getItemImageUri(item) ? (
+                      <Image
+                        source={{ uri: getItemImageUri(item) }}
+                        style={styles.shopItemImage}
+                      />
+                    ) : (
+                      <View style={[styles.shopItemImage, styles.placeholder]} />
+                    )}
                     <ThemedText numberOfLines={1} style={styles.shopItemName}>{item.name}</ThemedText>
                     <ShopSimilarButton
                       query={`${item.aiCategory || item.category || ''} ${item.name} ${item.aiColors?.[0] || ''}`}
@@ -536,6 +544,9 @@ export default function AIGenerateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   scrollContent: {
     padding: Spacing.lg,

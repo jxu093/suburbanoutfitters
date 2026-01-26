@@ -8,12 +8,15 @@ import { categorizeItems } from '@/utils/outfit-categorization';
 import { ThemedText } from './themed-text';
 
 function Thumbnail({ item, size }: { item: Item; size: number }) {
+  const imageUri = getItemImageUri(item);
   return (
-    <View style={[styles.thumbWrap, { width: size, height: size }]}>
-      <Image
-        source={{ uri: getItemImageUri(item) }}
-        style={{ width: size, height: size, resizeMode: 'cover' }}
-      />
+    <View style={[styles.thumbWrap, { width: size, height: size, backgroundColor: '#e0e0e0' }]}>
+      {imageUri && (
+        <Image
+          source={{ uri: imageUri }}
+          style={{ width: size, height: size, resizeMode: 'cover' }}
+        />
+      )}
     </View>
   );
 }

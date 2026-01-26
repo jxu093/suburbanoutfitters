@@ -618,7 +618,11 @@ export default function OutfitBuilder() {
           <ScrollView contentContainerStyle={styles.itemGrid}>
             {categoryItems.map((item) => (
               <TouchableOpacity key={item.id} onPress={() => handleItemSelect(item)} style={styles.gridItem}>
-                <Image source={{ uri: getItemImageUri(item) }} style={styles.gridThumb} />
+                {getItemImageUri(item) ? (
+                  <Image source={{ uri: getItemImageUri(item) }} style={styles.gridThumb} />
+                ) : (
+                  <View style={[styles.gridThumb, styles.placeholder]} />
+                )}
                 <ThemedText numberOfLines={1} style={styles.gridItemName}>
                   {item.name}
                 </ThemedText>
@@ -842,13 +846,18 @@ function FullScreenPreview({ items }: { items: Item[] }) {
   const hasSideItems = hasOuterwear || hasAccessory;
 
   // Helper to render an item image
-  const renderItem = (item: Item) => (
-    <Image
-      key={item.id}
-      source={{ uri: getItemImageUri(item) }}
-      style={styles.previewThumb}
-    />
-  );
+  const renderItem = (item: Item) => {
+    const imageUri = getItemImageUri(item);
+    return imageUri ? (
+      <Image
+        key={item.id}
+        source={{ uri: imageUri }}
+        style={styles.previewThumb}
+      />
+    ) : (
+      <View key={item.id} style={[styles.previewThumb, styles.placeholder]} />
+    );
+  };
 
   // If we have outerwear or accessories, use two-column layout
   if (hasSideItems) {
@@ -927,7 +936,11 @@ function CategorySlot({
           items.map((item) => (
             <View key={item.id} style={styles.slotItemWrap}>
               <TouchableOpacity onPress={onSelect} style={[styles.slotItem, { borderColor: colors.success }]}>
-                <Image source={{ uri: getItemImageUri(item) }} style={styles.slotThumb} />
+                {getItemImageUri(item) ? (
+                  <Image source={{ uri: getItemImageUri(item) }} style={styles.slotThumb} />
+                ) : (
+                  <View style={[styles.slotThumb, styles.placeholder]} />
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => onRemove(item)} style={styles.removeBtn}>
                 <Ionicons name="close-circle" size={24} color={colors.error} />
@@ -946,6 +959,7 @@ function CategorySlot({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  placeholder: { backgroundColor: '#e0e0e0' },
   scrollContent: { padding: Spacing.md, gap: Spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerLeft: { gap: Spacing.xs },

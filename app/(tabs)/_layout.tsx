@@ -108,6 +108,13 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      {/* AI Chat screen */}
+      <Tabs.Screen
+        name="outfits/ai-chat"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

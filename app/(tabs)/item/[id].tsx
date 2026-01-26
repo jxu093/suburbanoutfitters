@@ -28,6 +28,7 @@ import {
 } from '@/constants';
 import { useItems } from '@/hooks/use-items';
 import { aiService } from '@/services/ai';
+import { getValidImageUri } from '@/utils/item-helpers';
 import { resizeForAIAnalysis } from '@/services/image-service';
 
 export default function ItemScreen() {
@@ -260,7 +261,9 @@ export default function ItemScreen() {
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
 
-      <RNImage source={{ uri: item.imageUri }} style={styles.image} />
+      {getValidImageUri(item.imageUri) && (
+        <RNImage source={{ uri: getValidImageUri(item.imageUri) }} style={styles.image} />
+      )}
 
       {editing ? (
         <View style={styles.form}>

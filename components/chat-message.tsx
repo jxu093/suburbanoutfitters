@@ -97,10 +97,14 @@ export function ChatMessage({ message, onSelectItem, onFollowUpPress }: ChatMess
                 style={[styles.suggestionCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
                 onPress={() => onSelectItem?.(suggestion.item)}
               >
-                <Image
-                  source={{ uri: getItemImageUri(suggestion.item) }}
-                  style={styles.itemThumb}
-                />
+                {getItemImageUri(suggestion.item) ? (
+                  <Image
+                    source={{ uri: getItemImageUri(suggestion.item) }}
+                    style={styles.itemThumb}
+                  />
+                ) : (
+                  <View style={[styles.itemThumb, styles.placeholder]} />
+                )}
                 <View style={styles.suggestionInfo}>
                   <ThemedText style={styles.itemName} numberOfLines={1}>
                     {suggestion.item.name}
@@ -257,6 +261,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: Radii.xs,
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   suggestionInfo: {
     flex: 1,

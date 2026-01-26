@@ -21,7 +21,7 @@ import { aiService } from '@/services/ai';
 import type { InspirationMatch } from '@/services/ai/ai-provider';
 import { pickFromLibraryAsync, resizeForAIAnalysis } from '@/services/image-service';
 import type { Item } from '@/types';
-import { getItemImageUri } from '@/utils/item-helpers';
+import { getItemImageUri, getValidImageUri } from '@/utils/item-helpers';
 
 export default function InspirationScreen() {
   const router = useRouter();
@@ -161,7 +161,9 @@ export default function InspirationScreen() {
                 Inspiration
               </ThemedText>
               <View style={[styles.imageContainer, { borderColor: colors.border }]}>
-                <Image source={{ uri: inspoImageUri }} style={styles.inspoImage} contentFit="cover" />
+                {getValidImageUri(inspoImageUri) && (
+                  <Image source={{ uri: getValidImageUri(inspoImageUri)! }} style={styles.inspoImage} contentFit="cover" />
+                )}
                 <TouchableOpacity onPress={handleClear} style={styles.clearBtn}>
                   <Ionicons name="close-circle" size={24} color="#fff" />
                 </TouchableOpacity>
@@ -177,11 +179,15 @@ export default function InspirationScreen() {
                 <View style={[styles.matchedGrid, { borderColor: colors.border }]}>
                   {matchedItems.slice(0, 4).map((item, index) => (
                     <View key={item.id} style={styles.matchedItemWrapper}>
-                      <Image
-                        source={{ uri: getItemImageUri(item) }}
-                        style={styles.matchedItem}
-                        contentFit="cover"
-                      />
+                      {getItemImageUri(item) ? (
+                        <Image
+                          source={{ uri: getItemImageUri(item) }}
+                          style={styles.matchedItem}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.matchedItem, styles.placeholder]} />
+                      )}
                       {index === 3 && matchedItems.length > 4 && (
                         <View style={styles.moreOverlay}>
                           <ThemedText style={styles.moreText}>+{matchedItems.length - 4}</ThemedText>
@@ -277,11 +283,15 @@ export default function InspirationScreen() {
                       onPress={() => router.push(`/item/${item.id}`)}
                       style={[styles.itemCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
                     >
-                      <Image
-                        source={{ uri: getItemImageUri(item) }}
-                        style={styles.itemImage}
-                        contentFit="cover"
-                      />
+                      {getItemImageUri(item) ? (
+                        <Image
+                          source={{ uri: getItemImageUri(item) }}
+                          style={styles.itemImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.itemImage, styles.placeholder]} />
+                      )}
                       <ThemedText style={styles.itemName} numberOfLines={1}>{item.name}</ThemedText>
                     </TouchableOpacity>
                   ))}
@@ -328,6 +338,9 @@ export default function InspirationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   scrollContent: {
     padding: Spacing.lg,

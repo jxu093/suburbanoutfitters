@@ -199,10 +199,14 @@ export default function AIChatScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.outfitScroll}>
               {currentOutfit.map((item) => (
                 <View key={item.id} style={styles.outfitItem}>
-                  <Image
-                    source={{ uri: getItemImageUri(item) }}
-                    style={styles.outfitThumb}
-                  />
+                  {getItemImageUri(item) ? (
+                    <Image
+                      source={{ uri: getItemImageUri(item) }}
+                      style={styles.outfitThumb}
+                    />
+                  ) : (
+                    <View style={[styles.outfitThumb, styles.placeholder]} />
+                  )}
                   <TouchableOpacity
                     style={styles.removeItemBtn}
                     onPress={() => removeFromOutfit(item)}
@@ -294,6 +298,9 @@ export default function AIChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   keyboardAvoid: {
     flex: 1,

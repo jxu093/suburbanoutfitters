@@ -49,7 +49,7 @@ export function ItemSelectionSheet({
       >
         <View style={styles.sheetContainer}>
           <TouchableOpacity activeOpacity={1}>
-            <ThemedView style={[styles.sheet, { borderColor: colors.border }]}>
+            <ThemedView style={[styles.sheet, { borderColor: colors.border }]} useSafeArea={false}>
               <View style={styles.handle} />
 
               <ThemedText type="subtitle" style={styles.title}>
@@ -151,6 +151,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   sheet: {
+    flex: 0, // Override ThemedView's flex: 1
     borderTopLeftRadius: Radii.lg,
     borderTopRightRadius: Radii.lg,
     borderTopWidth: 1,

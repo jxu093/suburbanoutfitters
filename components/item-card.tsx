@@ -17,6 +17,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const imageUri = getItemImageUri(item);
 
   // Get all unique list tags from all items
   const allListTags = Array.from(
@@ -163,7 +164,11 @@ export default function ItemCard({ item }: { item: Item }) {
   return (
     <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.separator }, Shadows.card]}>
       <Link href={`/item/${item.id}`}>
-        <Image source={{ uri: getItemImageUri(item) }} style={styles.image} />
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.image} />
+        ) : (
+          <View style={[styles.image, styles.placeholder]} />
+        )}
       </Link>
       <ThemedText type="headline" numberOfLines={1} style={styles.name}>{item.name}</ThemedText>
       {item.category ? <ThemedText type="secondary" numberOfLines={1}>{item.category}</ThemedText> : null}
@@ -213,6 +218,9 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radii.sm,
     resizeMode: 'cover',
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   name: {
     textAlign: 'center',

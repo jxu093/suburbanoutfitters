@@ -58,10 +58,14 @@ export function ClosetSuggestionCard({ suggestion, onSelect, onDismiss }: Closet
       </View>
 
       <View style={styles.cardContent}>
-        <Image
-          source={{ uri: getItemImageUri(item) }}
-          style={styles.itemImage}
-        />
+        {getItemImageUri(item) ? (
+          <Image
+            source={{ uri: getItemImageUri(item) }}
+            style={styles.itemImage}
+          />
+        ) : (
+          <View style={[styles.itemImage, styles.placeholder]} />
+        )}
         <View style={styles.itemInfo}>
           <ThemedText style={styles.itemName} numberOfLines={1}>{item.name}</ThemedText>
           <ThemedText style={[styles.reasoning, { color: colors.textSecondary }]} numberOfLines={3}>
@@ -299,6 +303,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: Radii.sm,
+  },
+  placeholder: {
+    backgroundColor: '#e0e0e0',
   },
   itemInfo: {
     flex: 1,
