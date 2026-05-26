@@ -1,73 +1,134 @@
-# Welcome to your Expo app 👋
+# Suburban Outfitter
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal wardrobe management and AI styling app built with Expo and React Native. Catalog your clothing, build outfits, get AI-powered styling suggestions, and find new pieces that complement your wardrobe.
 
-## Get started
+## Screenshots
 
-1. Install dependencies
+<p align="center">
+  <img src="docs/screenshot-closet.png" width="200" alt="Closet">
+  <img src="docs/screenshot-item-detail.png" width="200" alt="Item Detail">
+  <img src="docs/screenshot-outfit-builder.png" width="200" alt="Outfit Builder">
+  <img src="docs/screenshot-ai-stylist.png" width="200" alt="AI Stylist">
+</p>
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- **Digital Closet** — Photograph and catalog clothing items with category, tags, and image thumbnails
+- **Outfit Builder** — Assemble outfits from your closet and save them for later
+- **Random Outfit** — Get random outfit suggestions with weather-aware filtering
+- **AI Auto-Tagging** — Analyze clothing photos with Claude's vision API to detect category, colors, style, formality, pattern, material, and more
+- **Smart Outfit Generation** — AI builds complete outfits from your wardrobe based on occasion, weather, and your style profile
+- **Inspiration Matching** — Upload a photo from Pinterest or Instagram and the AI matches it against items you already own
+- **Natural Language Chat** — Describe what you want ("build me a date night outfit") and the AI assembles it
+- **Shopping Suggestions** — When your closet falls short, get purchase recommendations with Amazon and Google Shopping links
+- **Style Profile** — Set body type, skin tone, and style preferences so AI recommendations are personalized
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 18+
+- iOS Simulator (Xcode) or Android Emulator (Android Studio)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Install
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Environment Variables
 
-## Learn more
+Copy the example env file and add your API keys:
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-
----
-
-## Environment variables (local)
-
-This project reads configuration from environment variables so you can keep API keys out of source control.
-
-- Copy `.env.example` to `.env.local` and add your real API keys (the `.env.local` file is already ignored):
-
-```text
-# .env.local
-WEATHER_API_KEY=your_openweathermap_api_key_here
+```bash
+cp .env.example .env.local
 ```
 
-- `app.config.js` loads `.env.local` and injects `WEATHER_API_KEY` into `expo` config `extra` so it is available at runtime via:
+`.env.local` requires two keys:
 
-```ts
-import Constants from 'expo-constants';
-const key = Constants.expoConfig?.extra?.WEATHER_API_KEY;
+| Variable | Description |
+|---|---|
+| `EXPO_PUBLIC_WEATHER_API_KEY` | [OpenWeatherMap](https://openweathermap.org/api) API key for weather-based outfit suggestions |
+| `EXPO_PUBLIC_CLAUDE_API_KEY` | [Anthropic](https://console.anthropic.com/) API key for all AI features |
+
+AI features work without a key — they just won't be available until one is configured (can also be set in-app under Settings > AI Setup).
+
+### Run
+
+```bash
+npm start           # Start Expo dev server
+npm run ios         # Run on iOS simulator
+npm run android     # Run on Android emulator
 ```
 
-- Do NOT commit `.env.local`. Use `.env.example` for sharing env variable names in the repo.
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| Framework | Expo SDK 54, React Native 0.81 |
+| Routing | expo-router (file-based) |
+| Database | expo-sqlite (synchronous API via `openDatabaseSync`) |
+| AI | Claude API (vision + text) via direct fetch |
+| Images | expo-image-picker + expo-image-manipulator |
+| Location | expo-location (for weather lookups) |
+| State | React hooks wrapping a SQLite storage service |
+| Testing | Jest 29 + React Testing Library |
+
+## Project Structure
+
+```
+app/
+  (tabs)/
+    closet/             # Closet browsing and search
+    outfits/            # Outfit list, builder, AI generate, inspiration, chat
+    settings/           # AI setup, profile, style quiz
+    add.tsx             # Add new clothing item (with AI analyze)
+    item/[id].tsx       # Item detail view
+  _layout.tsx           # Root layout
+  modal.tsx             # Shared modal
+
+services/
+  ai/
+    ai-provider.ts      # Provider interface and types
+    ai-service.ts       # Orchestrator singleton with caching
+    claude-provider.ts  # Claude API implementation (vision + text)
+    prompts.ts          # All prompt templates
+  affiliate/
+    affiliate-service.ts # Amazon/Google Shopping link generation
+  storage.ts            # SQLite database, migrations, all CRUD
+  image-service.ts      # Image picking, compression, base64 conversion
+  weather.ts            # OpenWeatherMap integration
+  randomizer.ts         # Random outfit selection logic
+
+app/components/         # Reusable UI (outfit builder, AI tags, product cards, etc.)
+app/hooks/              # use-items, use-outfits
+app/types/              # TypeScript types (Item, Outfit, AI attributes, UserProfile)
+app/constants/          # Theme colors and app constants
+
+__tests__/              # 36 test files covering storage, AI, UI, and integration
+```
+
+## Data Models
+
+**Item** — Clothing item with name, category, image path, tags, visibility state (`hiddenUntil` for temporary hiding), and optional AI attributes (colors, style, formality, pattern, material, seasons, weather suitability).
+
+**Outfit** — Named collection of item IDs with optional style notes.
+
+**UserProfile** — Body type, skin tone, height, style preferences, color preferences, lifestyle tags, and feedback counters.
+
+Arrays (tags, itemIds, preferences) are stored as JSON strings in SQLite.
+
+## Testing
+
+```bash
+npm test                              # Run all tests
+npm test -- __tests__/storage.test.ts # Run a single test file
+npm run lint                          # ESLint
+```
+
+## Environment & Secrets
+
+- **`.env.example`** — Committed. Contains placeholder variable names only.
+- **`.env.local`** — Gitignored. Your real API keys go here.
+- Keys can also be entered at runtime via Settings > AI Setup (stored in SQLite).
+- See `.gitignore` for the full list of ignored secret patterns (`.env.*`, `*.key`, `*.pem`, `*.keystore`, etc.).
